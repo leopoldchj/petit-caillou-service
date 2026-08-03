@@ -1,4 +1,4 @@
-package com.petitcaillou.service;
+package com.petitcaillou;
 
 import javax.sql.DataSource;
 
@@ -13,10 +13,6 @@ import org.testcontainers.mariadb.MariaDBContainer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Boots the whole application against a throwaway MariaDB matching the server
- * version, which exercises the datasource, Flyway and Hibernate wiring together.
- */
 @SpringBootTest
 @Testcontainers
 class PetitCaillouServiceApplicationTests

@@ -38,6 +38,14 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+petit-caillou:
+  jwt:
+    # HMAC-SHA256 secret, at least 32 bytes. The default is for local dev only;
+    # production must supply a real JWT_SECRET from the environment.
+    secret: ${JWT_SECRET:dev-only-insecure-secret-change-me-32bytes}
+    ttl-seconds: ${JWT_TTL_SECONDS:3600}
+    issuer: petit-caillou-service
+
 management:
   endpoints:
     web:

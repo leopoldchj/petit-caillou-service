@@ -1,7 +1,20 @@
+# Build output (also holds the compiled copy of the Flyway migrations)
 target/
+build/
+
+# Local secrets and environment (.env.example is the committed template)
 .env
 
+# Logs
+*.log
+logs/
+
+# IDE
 .idea/
 *.iml
 .vscode/
+
+# OS
 .DS_Store
+
+# Flyway migrations in src/main/resources/db/migration are source code and are committed on purpose.
