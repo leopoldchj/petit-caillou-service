@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
-import com.petitcaillou.domain.user.Alias;
+import com.petitcaillou.domain.user.Username;
 import com.petitcaillou.domain.user.Email;
 import com.petitcaillou.domain.user.HashedPassword;
 import com.petitcaillou.domain.user.Role;
@@ -19,28 +19,28 @@ import static org.mockito.Mockito.when;
 
 class UserServiceTest
 {
-  private static final Alias ALIAS = Alias.of("john_doe");
+  private static final Username USERNAME = Username.of("john_doe");
 
   private final UserRepository users = mock(UserRepository.class);
   private final UserService userService = new UserService(users);
 
   @Test
-  void given_existingAlias_when_gettingByAlias_then_returnsTheUser()
+  void given_existingUsername_when_gettingByUsername_then_returnsTheUser()
   {
-    User stored = User.reconstitute(ALIAS, Email.of("user@app.com"), HashedPassword.of("h"), Role.USER);
-    when(users.findByAlias(ALIAS)).thenReturn(Optional.of(stored));
+    User stored = User.reconstitute(USERNAME, Email.of("user@app.com"), HashedPassword.of("h"), Role.USER);
+    when(users.findByUsername(USERNAME)).thenReturn(Optional.of(stored));
 
-    User found = userService.byAlias(ALIAS);
+    User found = userService.byUsername(USERNAME);
 
     assertThat(found).isEqualTo(stored);
   }
 
   @Test
-  void given_missingAlias_when_gettingByAlias_then_throwsUserNotFound()
+  void given_missingUsername_when_gettingByUsername_then_throwsUserNotFound()
   {
-    when(users.findByAlias(ALIAS)).thenReturn(Optional.empty());
+    when(users.findByUsername(USERNAME)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> userService.byAlias(ALIAS))
+    assertThatThrownBy(() -> userService.byUsername(USERNAME))
       .isInstanceOf(UserNotFoundException.class);
   }
 }

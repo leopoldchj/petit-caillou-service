@@ -4,11 +4,11 @@ import java.util.Optional;
 
 public interface UserRepository
 {
-  boolean existsByAlias(Alias alias);
+  boolean existsByUsername(Username username);
 
   boolean existsByEmail(Email email);
 
-  Optional<User> findByAlias(Alias alias);
+  Optional<User> findByUsername(Username username);
 
   User save(User user);
 }

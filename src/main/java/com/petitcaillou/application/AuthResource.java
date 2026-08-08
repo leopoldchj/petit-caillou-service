@@ -13,7 +13,7 @@ import com.petitcaillou.application.dto.AuthResponse;
 import com.petitcaillou.application.dto.LoginRequest;
 import com.petitcaillou.application.dto.RegisterRequest;
 import com.petitcaillou.domain.authentication.AccessToken;
-import com.petitcaillou.domain.user.Alias;
+import com.petitcaillou.domain.user.Username;
 import com.petitcaillou.domain.user.Email;
 import com.petitcaillou.domain.user.RawPassword;
 import com.petitcaillou.service.AuthService;
@@ -34,7 +34,7 @@ public class AuthResource
   public AuthResponse register(@Valid @RequestBody RegisterRequest request)
   {
     AccessToken token = authService.register(
-      Alias.of(request.alias()),
+      Username.of(request.username()),
       Email.of(request.email()),
       RawPassword.of(request.password()));
     return AuthResponse.bearer(token.value());
@@ -43,7 +43,7 @@ public class AuthResource
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest request)
   {
-    AccessToken token = authService.login(Alias.of(request.alias()), RawPassword.of(request.password()));
+    AccessToken token = authService.login(Username.of(request.username()), RawPassword.of(request.password()));
     return AuthResponse.bearer(token.value());
   }
 }

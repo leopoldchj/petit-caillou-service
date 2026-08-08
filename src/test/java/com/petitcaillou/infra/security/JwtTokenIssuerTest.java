@@ -6,7 +6,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 
 import com.petitcaillou.domain.authentication.AccessToken;
-import com.petitcaillou.domain.user.Alias;
+import com.petitcaillou.domain.user.Username;
 import com.petitcaillou.domain.user.Email;
 import com.petitcaillou.domain.user.HashedPassword;
 import com.petitcaillou.domain.user.Role;
@@ -31,7 +31,7 @@ class JwtTokenIssuerTest
       .subject("john_doe")
       .build();
     when(encoder.encode(any(JwtEncoderParameters.class))).thenReturn(jwt);
-    User user = User.reconstitute(Alias.of("john_doe"), Email.of("a@b.com"), HashedPassword.of("h"), Role.USER);
+    User user = User.reconstitute(Username.of("john_doe"), Email.of("a@b.com"), HashedPassword.of("h"), Role.USER);
 
     AccessToken token = issuer.issueFor(user);
 

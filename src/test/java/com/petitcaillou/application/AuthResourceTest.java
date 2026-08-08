@@ -7,7 +7,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.petitcaillou.domain.authentication.AccessToken;
 import com.petitcaillou.domain.authentication.exceptions.InvalidCredentialsException;
-import com.petitcaillou.domain.user.exceptions.AliasAlreadyUsedException;
+import com.petitcaillou.domain.user.exceptions.UsernameAlreadyUsedException;
 import com.petitcaillou.service.AuthService;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -20,9 +20,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthResourceTest
 {
   private static final String REGISTER_JSON =
-    "{\"alias\":\"john_doe\",\"email\":\"user@app.com\",\"password\":\"password1\"}";
+    "{\"username\":\"john_doe\",\"email\":\"user@app.com\",\"password\":\"password1\"}";
   private static final String LOGIN_JSON =
-    "{\"alias\":\"john_doe\",\"password\":\"password1\"}";
+    "{\"username\":\"john_doe\",\"password\":\"password1\"}";
 
   private final AuthService authService = mock(AuthService.class);
   private final MockMvc mockMvc = MockMvcBuilders
@@ -40,9 +40,9 @@ class AuthResourceTest
   }
 
   @Test
-  void given_takenAlias_when_postingRegister_then_returnsConflict() throws Exception
+  void given_takenUsername_when_postingRegister_then_returnsConflict() throws Exception
   {
-    when(authService.register(any(), any(), any())).thenThrow(new AliasAlreadyUsedException());
+    when(authService.register(any(), any(), any())).thenThrow(new UsernameAlreadyUsedException());
 
     mockMvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content(REGISTER_JSON))
       .andExpect(status().isConflict());

@@ -37,7 +37,7 @@ class CurrentUserArgumentResolverTest
   }
 
   @Test
-  void given_jwtInSecurityContext_when_resolving_then_mapsSubjectToAlias()
+  void given_jwtInSecurityContext_when_resolving_then_mapsSubjectToUsername()
   {
     Jwt jwt = Jwt.withTokenValue("token")
       .header("alg", "HS256")
@@ -49,6 +49,6 @@ class CurrentUserArgumentResolverTest
 
     AuthenticatedUser current = (AuthenticatedUser) resolver.resolveArgument(null, null, null, null);
 
-    assertThat(current.alias().value()).isEqualTo("john_doe");
+    assertThat(current.username().value()).isEqualTo("john_doe");
   }
 }

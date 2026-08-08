@@ -44,21 +44,21 @@ class AuthenticationIntegrationTest
     mockMvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
   }
 
-  private String registerJson(String alias, String email, String password)
+  private String registerJson(String username, String email, String password)
   {
-    return "{\"alias\":\"%s\",\"email\":\"%s\",\"password\":\"%s\"}".formatted(alias, email, password);
+    return "{\"username\":\"%s\",\"email\":\"%s\",\"password\":\"%s\"}".formatted(username, email, password);
   }
 
-  private String loginJson(String alias, String password)
+  private String loginJson(String username, String password)
   {
-    return "{\"alias\":\"%s\",\"password\":\"%s\"}".formatted(alias, password);
+    return "{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password);
   }
 
-  private String registerAndGetToken(String alias, String email) throws Exception
+  private String registerAndGetToken(String username, String email) throws Exception
   {
     String body = mockMvc.perform(post("/auth/register")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(registerJson(alias, email, "Password1")))
+        .content(registerJson(username, email, "Password1")))
       .andReturn().getResponse().getContentAsString();
     Matcher matcher = ACCESS_TOKEN.matcher(body);
     matcher.find();
@@ -75,13 +75,13 @@ class AuthenticationIntegrationTest
   }
 
   @Test
-  void given_aliasAlreadyRegistered_when_registeringAgain_then_respondsConflict() throws Exception
+  void given_usernameAlreadyRegistered_when_registeringAgain_then_respondsConflict() throws Exception
   {
-    registerAndGetToken("dupalias", "dup1@ex.com");
+    registerAndGetToken("dupusername", "dup1@ex.com");
 
     mockMvc.perform(post("/auth/register")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(registerJson("dupalias", "dup2@ex.com", "Password1")))
+        .content(registerJson("dupusername", "dup2@ex.com", "Password1")))
       .andExpect(status().isConflict());
   }
 
@@ -115,11 +115,11 @@ class AuthenticationIntegrationTest
   }
 
   @Test
-  void given_tokenFromRegistration_when_callingProtectedEndpoint_then_returnsCurrentUserAlias() throws Exception
+  void given_tokenFromRegistration_when_callingProtectedEndpoint_then_returnsCurrentUserUsername() throws Exception
   {
     String token = registerAndGetToken("meuser", "me@ex.com");
 
     mockMvc.perform(get("/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
-      .andExpect(jsonPath("$.alias").value("meuser"));
+      .andExpect(jsonPath("$.username").value("meuser"));
   }
 }

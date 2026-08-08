@@ -2,32 +2,32 @@ package com.petitcaillou.domain.user;
 
 import java.util.regex.Pattern;
 
-public final class Alias
+public final class Username
 {
   private static final Pattern FORMAT = Pattern.compile("^[a-zA-Z0-9_.-]{3,30}$");
 
   private final String value;
 
-  private Alias(String value)
+  private Username(String value)
   {
     this.value = value;
   }
 
-  public static Alias of(String raw)
+  public static Username of(String raw)
   {
     if (raw == null)
     {
-      throw new IllegalArgumentException("Alias must not be null");
+      throw new IllegalArgumentException("Username must not be null");
     }
 
     String trimmed = raw.trim();
 
     if (!FORMAT.matcher(trimmed).matches())
     {
-      throw new IllegalArgumentException("Alias must be 3 to 30 characters of letters, digits, dot, dash or underscore");
+      throw new IllegalArgumentException("Username must be 3 to 30 characters of letters, digits, dot, dash or underscore");
     }
 
-    return new Alias(trimmed);
+    return new Username(trimmed);
   }
 
   public String value()
@@ -42,11 +42,11 @@ public final class Alias
     {
       return true;
     }
-    if (!(other instanceof Alias alias))
+    if (!(other instanceof Username username))
     {
       return false;
     }
-    return value.equals(alias.value);
+    return value.equals(username.value);
   }
 
   @Override

@@ -35,7 +35,7 @@ public class JwtTokenIssuer implements TokenIssuer
       .issuer(properties.getIssuer())
       .issuedAt(now)
       .expiresAt(now.plus(properties.getTtlSeconds(), ChronoUnit.SECONDS))
-      .subject(user.alias().value())
+      .subject(user.username().value())
       .claim("email", user.email().value())
       .claim("role", user.role().name())
       .build();

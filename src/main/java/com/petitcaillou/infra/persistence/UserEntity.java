@@ -14,8 +14,8 @@ import com.petitcaillou.domain.user.Role;
 public class UserEntity
 {
   @Id
-  @Column(name = "alias", nullable = false, updatable = false, length = 30)
-  private String alias;
+  @Column(name = "username", nullable = false, updatable = false, length = 30)
+  private String username;
 
   @Column(name = "email", nullable = false, unique = true, length = 320)
   private String email;
@@ -31,17 +31,17 @@ public class UserEntity
   {
   }
 
-  public UserEntity(String alias, String email, String passwordHash, Role role)
+  public UserEntity(String username, String email, String passwordHash, Role role)
   {
-    this.alias = alias;
+    this.username = username;
     this.email = email;
     this.passwordHash = passwordHash;
     this.role = role;
   }
 
-  public String getAlias()
+  public String getUsername()
   {
-    return alias;
+    return username;
   }
 
   public String getEmail()

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.petitcaillou.domain.authentication.exceptions.InvalidCredentialsException;
-import com.petitcaillou.domain.user.exceptions.AliasAlreadyUsedException;
+import com.petitcaillou.domain.user.exceptions.UsernameAlreadyUsedException;
 import com.petitcaillou.domain.user.exceptions.EmailAlreadyUsedException;
 import com.petitcaillou.domain.user.exceptions.WeakPasswordException;
 import com.petitcaillou.domain.user.exceptions.UserNotFoundException;
@@ -14,8 +14,8 @@ import com.petitcaillou.domain.user.exceptions.UserNotFoundException;
 @RestControllerAdvice
 public class ApiExceptionHandler
 {
-  @ExceptionHandler(AliasAlreadyUsedException.class)
-  public ProblemDetail onAliasAlreadyUsed(AliasAlreadyUsedException exception)
+  @ExceptionHandler(UsernameAlreadyUsedException.class)
+  public ProblemDetail onUsernameAlreadyUsed(UsernameAlreadyUsedException exception)
   {
     return problem(HttpStatus.CONFLICT, exception.getMessage());
   }

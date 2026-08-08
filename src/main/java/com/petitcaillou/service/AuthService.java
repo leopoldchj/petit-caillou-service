@@ -3,7 +3,7 @@ package com.petitcaillou.service;
 import com.petitcaillou.domain.authentication.AccessToken;
 import com.petitcaillou.domain.authentication.TokenIssuer;
 import com.petitcaillou.domain.authentication.exceptions.InvalidCredentialsException;
-import com.petitcaillou.domain.user.Alias;
+import com.petitcaillou.domain.user.Username;
 import com.petitcaillou.domain.user.Email;
 import com.petitcaillou.domain.user.PasswordHasher;
 import com.petitcaillou.domain.user.PasswordValidator;
@@ -11,7 +11,7 @@ import com.petitcaillou.domain.user.RawPassword;
 import com.petitcaillou.domain.user.Role;
 import com.petitcaillou.domain.user.User;
 import com.petitcaillou.domain.user.UserRepository;
-import com.petitcaillou.domain.user.exceptions.AliasAlreadyUsedException;
+import com.petitcaillou.domain.user.exceptions.UsernameAlreadyUsedException;
 import com.petitcaillou.domain.user.exceptions.EmailAlreadyUsedException;
 
 public class AuthService
@@ -30,13 +30,13 @@ public class AuthService
     this.tokenIssuer = tokenIssuer;
   }
 
-  public AccessToken register(Alias alias, Email email, RawPassword rawPassword)
+  public AccessToken register(Username username, Email email, RawPassword rawPassword)
   {
     passwordValidator.validate(rawPassword);
 
-    if (users.existsByAlias(alias))
+    if (users.existsByUsername(username))
     {
-      throw new AliasAlreadyUsedException();
+      throw new UsernameAlreadyUsedException();
     }
 
     if (users.existsByEmail(email))
@@ -44,13 +44,13 @@ public class AuthService
       throw new EmailAlreadyUsedException();
     }
 
-    User user = users.save(User.register(alias, email, rawPassword, Role.USER, passwordHasher));
+    User user = users.save(User.register(username, email, rawPassword, Role.USER, passwordHasher));
     return tokenIssuer.issueFor(user);
   }
 
-  public AccessToken login(Alias alias, RawPassword rawPassword)
+  public AccessToken login(Username username, RawPassword rawPassword)
   {
-    User user = users.findByAlias(alias)
+    User user = users.findByUsername(username)
       .orElseThrow(InvalidCredentialsException::new);
 
     if (!user.hasPassword(rawPassword, passwordHasher))

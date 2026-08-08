@@ -4,7 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
-import com.petitcaillou.domain.user.Alias;
+import com.petitcaillou.domain.user.Username;
 import com.petitcaillou.domain.user.Email;
 import com.petitcaillou.domain.user.User;
 import com.petitcaillou.domain.user.UserRepository;
@@ -20,9 +20,9 @@ public class UserRepositoryAdapter implements UserRepository
   }
 
   @Override
-  public boolean existsByAlias(Alias alias)
+  public boolean existsByUsername(Username username)
   {
-    return jpa.existsByAlias(alias.value());
+    return jpa.existsByUsername(username.value());
   }
 
   @Override
@@ -32,9 +32,9 @@ public class UserRepositoryAdapter implements UserRepository
   }
 
   @Override
-  public Optional<User> findByAlias(Alias alias)
+  public Optional<User> findByUsername(Username username)
   {
-    return jpa.findByAlias(alias.value()).map(UserMapper::toDomain);
+    return jpa.findByUsername(username.value()).map(UserMapper::toDomain);
   }
 
   @Override

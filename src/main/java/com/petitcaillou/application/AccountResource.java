@@ -21,7 +21,7 @@ public class AccountResource
   @GetMapping("/me")
   public CurrentUserView me(@CurrentUser AuthenticatedUser current)
   {
-    User user = userService.byAlias(current.alias());
-    return new CurrentUserView(user.alias().value(), user.email().value(), user.role().name());
+    User user = userService.byUsername(current.username());
+    return new CurrentUserView(user.username().value(), user.email().value(), user.role().name());
   }
 }

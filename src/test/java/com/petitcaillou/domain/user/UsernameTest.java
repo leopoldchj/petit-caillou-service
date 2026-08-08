@@ -5,33 +5,33 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class AliasTest
+class UsernameTest
 {
   @Test
   void given_stringWithForbiddenCharacters_when_creating_then_rejectsIt()
   {
-    assertThatThrownBy(() -> Alias.of("bad alias!"))
+    assertThatThrownBy(() -> Username.of("bad username!"))
       .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void given_tooShortString_when_creating_then_rejectsIt()
   {
-    assertThatThrownBy(() -> Alias.of("ab"))
+    assertThatThrownBy(() -> Username.of("ab"))
       .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void given_validString_when_creating_then_keepsIt()
   {
-    Alias alias = Alias.of("john_doe");
+    Username username = Username.of("john_doe");
 
-    assertThat(alias.value()).isEqualTo("john_doe");
+    assertThat(username.value()).isEqualTo("john_doe");
   }
 
   @Test
-  void given_sameValue_when_comparingTwoAliases_then_theyAreEqual()
+  void given_sameValue_when_comparingTwoUsernamees_then_theyAreEqual()
   {
-    assertThat(Alias.of("john_doe")).isEqualTo(Alias.of("john_doe"));
+    assertThat(Username.of("john_doe")).isEqualTo(Username.of("john_doe"));
   }
 }

@@ -12,7 +12,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import com.petitcaillou.application.CurrentUser;
 import com.petitcaillou.domain.authentication.AuthenticatedUser;
-import com.petitcaillou.domain.user.Alias;
+import com.petitcaillou.domain.user.Username;
 import com.petitcaillou.domain.user.Email;
 import com.petitcaillou.domain.user.Role;
 
@@ -32,7 +32,7 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
   {
     Jwt jwt = currentJwt();
     return new AuthenticatedUser(
-      Alias.of(jwt.getSubject()),
+      Username.of(jwt.getSubject()),
       Email.of(jwt.getClaimAsString("email")),
       Role.valueOf(jwt.getClaimAsString("role")));
   }
