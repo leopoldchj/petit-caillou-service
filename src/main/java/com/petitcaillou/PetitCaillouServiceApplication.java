@@ -1,4 +1,4 @@
-package com.petitcaillou.service;
+package com.petitcaillou;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
