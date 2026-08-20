@@ -25,7 +25,7 @@ class JobApplicationRepositoryAdapterTest
   private static final UUID ID = UUID.randomUUID();
   private static final UUID COMPANY = UUID.randomUUID();
   private static final JobApplicationDetails DETAILS = new JobApplicationDetails(
-    "https://jobs.example.com/1", CompanyId.of(COMPANY), "Backend engineer", "A role", LocalDate.of(2026, 1, 15),
+    "https://jobs.example.com/1", CompanyId.of(COMPANY), "Backend engineer", "A role", "Paris", LocalDate.of(2026, 1, 15),
     ResponseStatus.INTERVIEW);
 
   private final SpringDataJobApplicationRepository jpa = mock(SpringDataJobApplicationRepository.class);
@@ -34,7 +34,7 @@ class JobApplicationRepositoryAdapterTest
   private JobApplicationEntity storedEntity()
   {
     return new JobApplicationEntity(
-      ID.toString(), "owner", COMPANY.toString(), "https://jobs.example.com/1", "Backend engineer", "A role",
+      ID.toString(), "owner", COMPANY.toString(), "https://jobs.example.com/1", "Backend engineer", "A role", "Paris",
       LocalDate.of(2026, 1, 15), ResponseStatus.INTERVIEW);
   }
 
@@ -84,6 +84,14 @@ class JobApplicationRepositoryAdapterTest
     when(jpa.findByOwnerUsernameAndCompanyId("owner", COMPANY.toString())).thenReturn(List.of(storedEntity()));
 
     assertThat(adapter.findByOwnerAndCompany(Username.of("owner"), CompanyId.of(COMPANY))).hasSize(1);
+  }
+
+  @Test
+  void given_company_when_checkingUsage_then_delegatesToJpa()
+  {
+    when(jpa.existsByCompanyId(COMPANY.toString())).thenReturn(true);
+
+    assertThat(adapter.existsByCompany(CompanyId.of(COMPANY))).isTrue();
   }
 
   @Test

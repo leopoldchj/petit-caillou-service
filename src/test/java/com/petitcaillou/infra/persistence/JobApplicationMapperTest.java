@@ -19,7 +19,7 @@ class JobApplicationMapperTest
   private static final UUID ID = UUID.randomUUID();
   private static final UUID COMPANY = UUID.randomUUID();
   private static final JobApplicationDetails DETAILS = new JobApplicationDetails(
-    "https://jobs.example.com/1", CompanyId.of(COMPANY), "Backend engineer", "A role", LocalDate.of(2026, 1, 15),
+    "https://jobs.example.com/1", CompanyId.of(COMPANY), "Backend engineer", "A role", "Paris", LocalDate.of(2026, 1, 15),
     ResponseStatus.INTERVIEW);
 
   @Test
@@ -37,7 +37,7 @@ class JobApplicationMapperTest
   void given_entity_when_mappingToDomain_then_copiesTheTitle()
   {
     JobApplicationEntity entity = new JobApplicationEntity(
-      ID.toString(), "owner", COMPANY.toString(), "https://jobs.example.com/1", "Backend engineer", "A role",
+      ID.toString(), "owner", COMPANY.toString(), "https://jobs.example.com/1", "Backend engineer", "A role", "Paris",
       LocalDate.of(2026, 1, 15), ResponseStatus.INTERVIEW);
 
     JobApplication application = JobApplicationMapper.toDomain(entity);

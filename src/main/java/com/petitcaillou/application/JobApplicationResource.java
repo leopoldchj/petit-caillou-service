@@ -100,6 +100,7 @@ public class JobApplicationResource
       company(request.companyId()),
       request.title(),
       request.description(),
+      request.location(),
       request.applicationDate(),
       request.responseStatus());
   }

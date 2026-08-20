@@ -34,6 +34,9 @@ public class JobApplicationEntity
   @Column(name = "description", length = 2000)
   private String description;
 
+  @Column(name = "location", length = 255)
+  private String location;
+
   @Column(name = "application_date")
   private LocalDate applicationDate;
 
@@ -46,7 +49,7 @@ public class JobApplicationEntity
   }
 
   public JobApplicationEntity(String id, String ownerUsername, String companyId, String link, String title,
-    String description, LocalDate applicationDate, ResponseStatus responseStatus)
+    String description, String location, LocalDate applicationDate, ResponseStatus responseStatus)
   {
     this.id = id;
     this.ownerUsername = ownerUsername;
@@ -54,6 +57,7 @@ public class JobApplicationEntity
     this.link = link;
     this.title = title;
     this.description = description;
+    this.location = location;
     this.applicationDate = applicationDate;
     this.responseStatus = responseStatus;
   }
@@ -86,6 +90,11 @@ public class JobApplicationEntity
   public String getDescription()
   {
     return description;
+  }
+
+  public String getLocation()
+  {
+    return location;
   }
 
   public LocalDate getApplicationDate()

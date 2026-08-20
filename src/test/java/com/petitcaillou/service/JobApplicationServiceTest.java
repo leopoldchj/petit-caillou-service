@@ -34,7 +34,7 @@ class JobApplicationServiceTest
   private static final JobApplicationId ID = JobApplicationId.of(UUID.randomUUID());
   private static final CompanyId COMPANY = CompanyId.of(UUID.randomUUID());
   private static final JobApplicationDetails DETAILS = new JobApplicationDetails(
-    "https://jobs.example.com/1", COMPANY, "Backend engineer", "A role", LocalDate.of(2026, 1, 15),
+    "https://jobs.example.com/1", COMPANY, "Backend engineer", "A role", "Paris", LocalDate.of(2026, 1, 15),
     ResponseStatus.NO_RESPONSE);
 
   private final JobApplicationRepository applications = mock(JobApplicationRepository.class);

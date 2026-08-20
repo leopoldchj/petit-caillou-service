@@ -12,6 +12,7 @@ import com.petitcaillou.domain.company.CompanyId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CompanyRepositoryAdapterTest
@@ -70,5 +71,13 @@ class CompanyRepositoryAdapterTest
     when(jpa.findAll()).thenReturn(List.of(storedEntity()));
 
     assertThat(adapter.findAll()).hasSize(1);
+  }
+
+  @Test
+  void given_id_when_deleting_then_delegatesToJpa()
+  {
+    adapter.delete(CompanyId.of(ID));
+
+    verify(jpa).deleteById(ID.toString());
   }
 }

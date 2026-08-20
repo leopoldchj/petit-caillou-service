@@ -16,5 +16,7 @@ public interface JobApplicationRepository
 
   List<JobApplication> findByOwnerAndCompany(Username owner, CompanyId companyId);
 
+  boolean existsByCompany(CompanyId companyId);
+
   void deleteById(JobApplicationId id);
 }

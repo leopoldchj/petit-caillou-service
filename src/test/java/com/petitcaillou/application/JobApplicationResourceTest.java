@@ -35,8 +35,8 @@ class JobApplicationResourceTest
   private static final UUID ID = UUID.randomUUID();
   private static final CompanyId COMPANY = CompanyId.of(UUID.randomUUID());
   private static final JobApplicationRequest REQUEST = new JobApplicationRequest(
-    "https://jobs.example.com/1", COMPANY.value().toString(), "Backend engineer", "A role", LocalDate.of(2026, 1, 15),
-    ResponseStatus.INTERVIEW);
+    "https://jobs.example.com/1", COMPANY.value().toString(), "Backend engineer", "A role", "Paris",
+    LocalDate.of(2026, 1, 15), ResponseStatus.INTERVIEW);
 
   private final JobApplicationService service = mock(JobApplicationService.class);
   private final CompanyService companyService = mock(CompanyService.class);
@@ -45,7 +45,7 @@ class JobApplicationResourceTest
   private JobApplication domainApplication()
   {
     JobApplicationDetails details = new JobApplicationDetails(
-      "https://jobs.example.com/1", COMPANY, "Backend engineer", "A role", LocalDate.of(2026, 1, 15),
+      "https://jobs.example.com/1", COMPANY, "Backend engineer", "A role", "Paris", LocalDate.of(2026, 1, 15),
       ResponseStatus.INTERVIEW);
     return JobApplication.reconstitute(JobApplicationId.of(ID), OWNER, details);
   }

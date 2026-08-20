@@ -23,6 +23,7 @@ final class JobApplicationMapper
       application.link(),
       application.title(),
       application.description(),
+      application.location(),
       application.applicationDate(),
       application.responseStatus());
   }
@@ -34,6 +35,7 @@ final class JobApplicationMapper
       CompanyId.of(UUID.fromString(entity.getCompanyId())),
       entity.getTitle(),
       entity.getDescription(),
+      entity.getLocation(),
       entity.getApplicationDate(),
       entity.getResponseStatus());
 

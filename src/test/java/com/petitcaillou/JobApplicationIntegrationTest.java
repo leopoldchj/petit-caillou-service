@@ -131,6 +131,42 @@ class JobApplicationIntegrationTest
   }
 
   @Test
+  void given_authenticatedUser_when_updatingCompany_then_respondsOk() throws Exception
+  {
+    String token = registerAndGetToken("company_editor", "company_editor@ex.com");
+    String companyId = createCompany(token, "Editor Co");
+
+    mockMvc.perform(put("/companies/" + companyId)
+        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"name\":\"Renamed Co\"}"))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  void given_unusedCompany_when_deleting_then_respondsNoContent() throws Exception
+  {
+    String token = registerAndGetToken("company_remover", "company_remover@ex.com");
+    String companyId = createCompany(token, "Remover Co Global");
+
+    mockMvc.perform(delete("/companies/" + companyId)
+        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(status().isNoContent());
+  }
+
+  @Test
+  void given_companyInUse_when_deleting_then_respondsConflict() throws Exception
+  {
+    String token = registerAndGetToken("company_locked", "company_locked@ex.com");
+    String companyId = createCompany(token, "Locked Co");
+    createApplication(token, companyId);
+
+    mockMvc.perform(delete("/companies/" + companyId)
+        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(status().isConflict());
+  }
+
+  @Test
   void given_knownCompany_when_creatingApplication_then_respondsCreated() throws Exception
   {
     String token = registerAndGetToken("creator", "creator@ex.com");

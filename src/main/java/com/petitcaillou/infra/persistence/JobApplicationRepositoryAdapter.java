@@ -48,6 +48,12 @@ public class JobApplicationRepositoryAdapter implements JobApplicationRepository
   }
 
   @Override
+  public boolean existsByCompany(CompanyId companyId)
+  {
+    return jpa.existsByCompanyId(companyId.value().toString());
+  }
+
+  @Override
   public void deleteById(JobApplicationId id)
   {
     jpa.deleteById(id.value().toString());

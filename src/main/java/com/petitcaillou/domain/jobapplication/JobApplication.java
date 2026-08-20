@@ -13,6 +13,7 @@ public final class JobApplication
   private final String link;
   private final String title;
   private final String description;
+  private final String location;
   private final LocalDate applicationDate;
   private final ResponseStatus responseStatus;
 
@@ -33,6 +34,7 @@ public final class JobApplication
     this.link = details.link();
     this.title = details.title();
     this.description = details.description();
+    this.location = details.location();
     this.applicationDate = details.applicationDate();
     this.responseStatus = details.responseStatus() == null ? ResponseStatus.NO_RESPONSE : details.responseStatus();
   }
@@ -85,6 +87,11 @@ public final class JobApplication
   public String description()
   {
     return description;
+  }
+
+  public String location()
+  {
+    return location;
   }
 
   public LocalDate applicationDate()

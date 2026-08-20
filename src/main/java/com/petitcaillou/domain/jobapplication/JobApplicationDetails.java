@@ -9,6 +9,7 @@ public record JobApplicationDetails(
   CompanyId companyId,
   String title,
   String description,
+  String location,
   LocalDate applicationDate,
   ResponseStatus responseStatus)
 {

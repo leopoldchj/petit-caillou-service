@@ -9,4 +9,6 @@ interface SpringDataJobApplicationRepository extends JpaRepository<JobApplicatio
   List<JobApplicationEntity> findByOwnerUsername(String ownerUsername);
 
   List<JobApplicationEntity> findByOwnerUsernameAndCompanyId(String ownerUsername, String companyId);
+
+  boolean existsByCompanyId(String companyId);
 }

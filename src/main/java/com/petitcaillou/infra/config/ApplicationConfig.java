@@ -38,9 +38,9 @@ public class ApplicationConfig
   }
 
   @Bean
-  CompanyService companyService(CompanyRepository companies)
+  CompanyService companyService(CompanyRepository companies, JobApplicationRepository applications)
   {
-    return new CompanyService(companies);
+    return new CompanyService(companies, applications);
   }
 
   @Bean

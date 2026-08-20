@@ -12,6 +12,7 @@ public record JobApplicationRequest(
   @NotBlank String companyId,
   @NotBlank @Size(max = 255) String title,
   @Size(max = 2000) String description,
+  @Size(max = 255) String location,
   LocalDate applicationDate,
   ResponseStatus responseStatus)
 {

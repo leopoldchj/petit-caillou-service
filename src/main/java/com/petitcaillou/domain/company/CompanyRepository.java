@@ -14,4 +14,6 @@ public interface CompanyRepository
   boolean existsById(CompanyId id);
 
   List<Company> findAll();
+
+  void delete(CompanyId id);
 }

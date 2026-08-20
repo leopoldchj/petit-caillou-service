@@ -48,4 +48,10 @@ public class CompanyRepositoryAdapter implements CompanyRepository
   {
     return jpa.findAll().stream().map(CompanyMapper::toDomain).toList();
   }
+
+  @Override
+  public void delete(CompanyId id)
+  {
+    jpa.deleteById(id.value().toString());
+  }
 }

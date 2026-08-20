@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.petitcaillou.domain.authentication.exceptions.InvalidCredentialsException;
+import com.petitcaillou.domain.company.exceptions.CompanyInUseException;
 import com.petitcaillou.domain.company.exceptions.CompanyNameAlreadyUsedException;
 import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
 import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationNotFoundException;
@@ -65,6 +66,12 @@ public class ApiExceptionHandler
     ProblemDetail detail = problem(HttpStatus.CONFLICT, exception.getMessage());
     detail.setProperty("existingCompanyId", exception.existingId().value().toString());
     return detail;
+  }
+
+  @ExceptionHandler(CompanyInUseException.class)
+  public ProblemDetail onCompanyInUse(CompanyInUseException exception)
+  {
+    return problem(HttpStatus.CONFLICT, exception.getMessage());
   }
 
   @ExceptionHandler(WeakPasswordException.class)

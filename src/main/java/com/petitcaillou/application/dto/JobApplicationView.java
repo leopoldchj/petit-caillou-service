@@ -11,6 +11,7 @@ public record JobApplicationView(
   String link,
   String title,
   String description,
+  String location,
   LocalDate applicationDate,
   String responseStatus)
 {
@@ -22,6 +23,7 @@ public record JobApplicationView(
       application.link(),
       application.title(),
       application.description(),
+      application.location(),
       application.applicationDate(),
       application.responseStatus().name());
   }
