@@ -120,11 +120,20 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
 
-      <!-- Test coverage. Reports to target/site/jacoco after the test phase. -->
+      <!--
+        Test coverage. Reports to target/site/jacoco after the test phase, and
+        the check fails the build when line coverage drops below 85%. The
+        bootstrap class carries no logic and is excluded from the measurement.
+      -->
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.13</version>
+        <configuration>
+          <excludes>
+            <exclude>**/PetitCaillouServiceApplication.class</exclude>
+          </excludes>
+        </configuration>
         <executions>
           <execution>
             <id>prepare-agent</id>
@@ -138,6 +147,27 @@
             <goals>
               <goal>report</goal>
             </goals>
+          </execution>
+          <execution>
+            <id>check</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>LINE</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.85</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
           </execution>
         </executions>
       </plugin>
