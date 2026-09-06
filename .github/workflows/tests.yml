@@ -1,0 +1,27 @@
+name: Backend tests
+
+on:
+  push:
+  pull_request:
+  workflow_call: {}
+
+jobs:
+  test:
+    name: mvn verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # Testcontainers spins up a throwaway MariaDB 10.11 through Docker, which
+      # is preinstalled on GitHub-hosted Linux runners. No service container or
+      # DB secret is needed: the test provides its own database.
+      - name: Run tests
+        run: ./mvnw -B -ntp verify
