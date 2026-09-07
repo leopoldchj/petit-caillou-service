@@ -14,19 +14,19 @@ class CompanyMapperTest
   private static final UUID ID = UUID.randomUUID();
 
   @Test
-  void given_domainCompany_when_mappingToEntity_then_copiesTheId()
+  void given_domainCompany_when_mappingToEntity_then_copiesTheNormalizedName()
   {
-    Company company = Company.reconstitute(CompanyId.of(ID), "ACME", "https://acme.example.com");
+    Company company = Company.reconstitute(CompanyId.of(ID), "ACME Corp.", "https://acme.example.com");
 
     CompanyEntity entity = CompanyMapper.toEntity(company);
 
-    assertThat(entity.getId()).isEqualTo(ID.toString());
+    assertThat(entity.getNormalizedName()).isEqualTo("acme");
   }
 
   @Test
   void given_entity_when_mappingToDomain_then_copiesTheName()
   {
-    CompanyEntity entity = new CompanyEntity(ID.toString(), "ACME", "https://acme.example.com");
+    CompanyEntity entity = new CompanyEntity(ID.toString(), "ACME", "acme", "https://acme.example.com");
 
     Company company = CompanyMapper.toDomain(entity);
 

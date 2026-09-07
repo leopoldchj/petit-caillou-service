@@ -7,60 +7,65 @@ import org.junit.jupiter.api.Test;
 
 import com.petitcaillou.application.dto.CompanyRequest;
 import com.petitcaillou.application.dto.CompanyView;
+import com.petitcaillou.application.dto.PageView;
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.pagination.Page;
 import com.petitcaillou.service.CompanyService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CompanyResourceTest
 {
-  private static final UUID ID = UUID.randomUUID();
+  private static final CompanyId ID = CompanyId.of(UUID.randomUUID());
 
   private final CompanyService companyService = mock(CompanyService.class);
   private final CompanyResource resource = new CompanyResource(companyService);
 
   @Test
-  void given_storedCompanies_when_listing_then_returnsThem()
+  void given_query_when_listing_then_returnsAPageOfCompanies()
   {
-    when(companyService.all()).thenReturn(List.of(Company.create("ACME", null)));
+    when(companyService.search(any(), any()))
+      .thenReturn(new Page<>(List.of(Company.reconstitute(ID, "ACME", null)), 0, 20, 1));
 
-    List<CompanyView> views = resource.list();
+    PageView<CompanyView> page = resource.list("ac", null, null);
 
-    assertThat(views).hasSize(1);
+    assertThat(page.items()).hasSize(1);
   }
 
   @Test
-  void given_request_when_creating_then_returnsTheCreatedName()
+  void given_id_when_gettingById_then_returnsTheCompany()
   {
-    when(companyService.create("ACME", "https://acme.example.com"))
-      .thenReturn(Company.create("ACME", "https://acme.example.com"));
+    when(companyService.byId(ID)).thenReturn(Company.reconstitute(ID, "ACME", null));
 
-    CompanyView view = resource.create(new CompanyRequest("ACME", "https://acme.example.com"));
-
-    assertThat(view.name()).isEqualTo("ACME");
+    assertThat(resource.get(ID.value().toString()).name()).isEqualTo("ACME");
   }
 
   @Test
-  void given_request_when_updating_then_returnsTheUpdatedName()
+  void given_request_when_creating_then_returnsTheCreatedCompany()
   {
-    when(companyService.update(eq(CompanyId.of(ID)), eq("New name"), eq(null)))
-      .thenReturn(Company.reconstitute(CompanyId.of(ID), "New name", null));
+    when(companyService.create("ACME", null)).thenReturn(Company.reconstitute(ID, "ACME", null));
 
-    CompanyView view = resource.update(ID.toString(), new CompanyRequest("New name", null));
+    assertThat(resource.create(new CompanyRequest("ACME", null)).name()).isEqualTo("ACME");
+  }
 
-    assertThat(view.name()).isEqualTo("New name");
+  @Test
+  void given_request_when_updating_then_returnsTheUpdatedCompany()
+  {
+    when(companyService.update(ID, "ACME", null)).thenReturn(Company.reconstitute(ID, "ACME", null));
+
+    assertThat(resource.update(ID.value().toString(), new CompanyRequest("ACME", null)).id()).isEqualTo(ID.value().toString());
   }
 
   @Test
   void given_id_when_deleting_then_delegatesToService()
   {
-    resource.delete(ID.toString());
+    resource.delete(ID.value().toString());
 
-    verify(companyService).delete(CompanyId.of(ID));
+    verify(companyService).delete(ID);
   }
 }

@@ -9,10 +9,13 @@ import org.junit.jupiter.api.Test;
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.company.CompanyRepository;
+import com.petitcaillou.domain.company.NormalizedName;
 import com.petitcaillou.domain.company.exceptions.CompanyInUseException;
 import com.petitcaillou.domain.company.exceptions.CompanyNameAlreadyUsedException;
 import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
-import com.petitcaillou.domain.jobapplication.JobApplicationRepository;
+import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -28,10 +31,11 @@ class CompanyServiceTest
 {
   private static final CompanyId ID = CompanyId.of(UUID.randomUUID());
   private static final CompanyId OTHER_ID = CompanyId.of(UUID.randomUUID());
+  private static final NormalizedName ACME = NormalizedName.of("ACME");
 
   private final CompanyRepository companies = mock(CompanyRepository.class);
-  private final JobApplicationRepository applications = mock(JobApplicationRepository.class);
-  private final CompanyService service = new CompanyService(companies, applications);
+  private final OfferRepository offers = mock(OfferRepository.class);
+  private final CompanyService service = new CompanyService(companies, offers);
 
   private Company company(CompanyId id, String name)
   {
@@ -41,7 +45,7 @@ class CompanyServiceTest
   @Test
   void given_newName_when_creating_then_savesTheCompany()
   {
-    when(companies.findByName("ACME")).thenReturn(Optional.empty());
+    when(companies.findByNormalizedName(ACME)).thenReturn(Optional.empty());
     when(companies.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     service.create("ACME", "https://acme.example.com");
@@ -50,9 +54,9 @@ class CompanyServiceTest
   }
 
   @Test
-  void given_existingName_when_creating_then_throwsWithTheExistingId()
+  void given_existingNormalizedName_when_creating_then_throwsWithTheExistingId()
   {
-    when(companies.findByName("ACME")).thenReturn(Optional.of(company(ID, "ACME")));
+    when(companies.findByNormalizedName(ACME)).thenReturn(Optional.of(company(ID, "Acme")));
 
     assertThatExceptionOfType(CompanyNameAlreadyUsedException.class)
       .isThrownBy(() -> service.create("ACME", null))
@@ -63,7 +67,7 @@ class CompanyServiceTest
   void given_existingCompany_when_updating_then_savesTheCompany()
   {
     when(companies.findById(ID)).thenReturn(Optional.of(company(ID, "Old name")));
-    when(companies.findByName("New name")).thenReturn(Optional.empty());
+    when(companies.findByNormalizedName(NormalizedName.of("New name"))).thenReturn(Optional.empty());
     when(companies.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     service.update(ID, "New name", null);
@@ -84,7 +88,8 @@ class CompanyServiceTest
   void given_nameTakenByAnotherCompany_when_updating_then_throwsNameAlreadyUsed()
   {
     when(companies.findById(ID)).thenReturn(Optional.of(company(ID, "Old name")));
-    when(companies.findByName("Taken")).thenReturn(Optional.of(company(OTHER_ID, "Taken")));
+    when(companies.findByNormalizedName(NormalizedName.of("Taken")))
+      .thenReturn(Optional.of(company(OTHER_ID, "Taken")));
 
     assertThatThrownBy(() -> service.update(ID, "Taken", null))
       .isInstanceOf(CompanyNameAlreadyUsedException.class);
@@ -94,7 +99,7 @@ class CompanyServiceTest
   void given_unusedCompany_when_deleting_then_deletes()
   {
     when(companies.findById(ID)).thenReturn(Optional.of(company(ID, "ACME")));
-    when(applications.existsByCompany(ID)).thenReturn(false);
+    when(offers.existsByCompany(ID)).thenReturn(false);
 
     service.delete(ID);
 
@@ -111,20 +116,20 @@ class CompanyServiceTest
   }
 
   @Test
-  void given_companyStillUsed_when_deleting_then_throwsInUse()
+  void given_companyStillUsedByOffers_when_deleting_then_throwsInUse()
   {
     when(companies.findById(ID)).thenReturn(Optional.of(company(ID, "ACME")));
-    when(applications.existsByCompany(ID)).thenReturn(true);
+    when(offers.existsByCompany(ID)).thenReturn(true);
 
     assertThatThrownBy(() -> service.delete(ID))
       .isInstanceOf(CompanyInUseException.class);
   }
 
   @Test
-  void given_companyStillUsed_when_deleting_then_neverDeletes()
+  void given_companyStillUsedByOffers_when_deleting_then_neverDeletes()
   {
     when(companies.findById(ID)).thenReturn(Optional.of(company(ID, "ACME")));
-    when(applications.existsByCompany(ID)).thenReturn(true);
+    when(offers.existsByCompany(ID)).thenReturn(true);
     catchThrowable(() -> service.delete(ID));
 
     verify(companies, never()).delete(any());
@@ -139,10 +144,20 @@ class CompanyServiceTest
   }
 
   @Test
-  void given_storedCompanies_when_listingAll_then_returnsThem()
+  void given_ids_when_lookingUpByIds_then_keysById()
   {
-    when(companies.findAll()).thenReturn(List.of(Company.create("ACME", null)));
+    when(companies.findAllByIds(any())).thenReturn(List.of(company(ID, "ACME")));
 
-    assertThat(service.all()).hasSize(1);
+    assertThat(service.byIds(List.of(ID))).containsKey(ID);
+  }
+
+  @Test
+  void given_query_when_searching_then_foldsTheQueryAndDelegates()
+  {
+    PageRequest pageRequest = new PageRequest(0, 20);
+    when(companies.search("acme", pageRequest))
+      .thenReturn(new Page<>(List.of(company(ID, "ACME")), 0, 20, 1));
+
+    assertThat(service.search("ACME", pageRequest).totalElements()).isEqualTo(1);
   }
 }

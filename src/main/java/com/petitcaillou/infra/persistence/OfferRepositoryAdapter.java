@@ -1,0 +1,80 @@
+package com.petitcaillou.infra.persistence;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Component;
+
+import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.offer.ContentHash;
+import com.petitcaillou.domain.offer.Offer;
+import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.offer.SystemAccount;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
+import com.petitcaillou.domain.user.Username;
+
+@Component
+public class OfferRepositoryAdapter implements OfferRepository
+{
+  private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "publicationDate").and(Sort.by("id"));
+
+  private final SpringDataOfferRepository jpa;
+
+  public OfferRepositoryAdapter(SpringDataOfferRepository jpa)
+  {
+    this.jpa = jpa;
+  }
+
+  @Override
+  public Offer save(Offer offer)
+  {
+    return OfferMapper.toDomain(jpa.save(OfferMapper.toEntity(offer)));
+  }
+
+  @Override
+  public Optional<Offer> findById(OfferId id)
+  {
+    return jpa.findById(id.value().toString()).map(OfferMapper::toDomain);
+  }
+
+  @Override
+  public List<Offer> findAllByIds(Collection<OfferId> ids)
+  {
+    return jpa.findAllById(ids.stream().map(id -> id.value().toString()).toList())
+      .stream().map(OfferMapper::toDomain).toList();
+  }
+
+  @Override
+  public boolean existsByCompany(CompanyId companyId)
+  {
+    return jpa.existsByCompanyId(companyId.value().toString());
+  }
+
+  @Override
+  public Optional<Offer> findByDedupKeyAndCreatedBy(ContentHash dedupKey, Username createdBy)
+  {
+    return jpa.findByContentHashAndCreatedBy(dedupKey.value(), createdBy.value()).map(OfferMapper::toDomain);
+  }
+
+  @Override
+  public Page<Offer> findVisibleTo(Username user, PageRequest pageRequest)
+  {
+    List<String> scopes = List.of(SystemAccount.USERNAME.value(), user.value());
+    var page = jpa.findByCreatedByIn(scopes, PageMapper.toPageable(pageRequest.page(), pageRequest.size(), NEWEST_FIRST));
+    return PageMapper.toDomain(
+      page.getContent().stream().map(OfferMapper::toDomain).toList(),
+      pageRequest.page(),
+      pageRequest.size(),
+      page.getTotalElements());
+  }
+
+  @Override
+  public boolean existsById(OfferId id)
+  {
+    return jpa.existsById(id.value().toString());
+  }
+}

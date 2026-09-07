@@ -1,17 +1,24 @@
 package com.petitcaillou.infra.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.company.CompanyRepository;
+import com.petitcaillou.domain.company.NormalizedName;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 
 @Component
 public class CompanyRepositoryAdapter implements CompanyRepository
 {
+  private static final Sort BY_NAME = Sort.by("normalizedName").and(Sort.by("id"));
+
   private final SpringDataCompanyRepository jpa;
 
   public CompanyRepositoryAdapter(SpringDataCompanyRepository jpa)
@@ -32,9 +39,16 @@ public class CompanyRepositoryAdapter implements CompanyRepository
   }
 
   @Override
-  public Optional<Company> findByName(String name)
+  public Optional<Company> findByNormalizedName(NormalizedName normalizedName)
   {
-    return jpa.findByName(name).map(CompanyMapper::toDomain);
+    return jpa.findByNormalizedName(normalizedName.value()).map(CompanyMapper::toDomain);
+  }
+
+  @Override
+  public List<Company> findAllByIds(Collection<CompanyId> ids)
+  {
+    return jpa.findAllById(ids.stream().map(id -> id.value().toString()).toList())
+      .stream().map(CompanyMapper::toDomain).toList();
   }
 
   @Override
@@ -44,9 +58,15 @@ public class CompanyRepositoryAdapter implements CompanyRepository
   }
 
   @Override
-  public List<Company> findAll()
+  public Page<Company> search(String normalizedPrefix, PageRequest pageRequest)
   {
-    return jpa.findAll().stream().map(CompanyMapper::toDomain).toList();
+    var page = jpa.findByNormalizedNameStartingWith(
+      normalizedPrefix, PageMapper.toPageable(pageRequest.page(), pageRequest.size(), BY_NAME));
+    return PageMapper.toDomain(
+      page.getContent().stream().map(CompanyMapper::toDomain).toList(),
+      pageRequest.page(),
+      pageRequest.size(),
+      page.getTotalElements());
   }
 
   @Override

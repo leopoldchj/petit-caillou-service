@@ -1,39 +1,49 @@
 package com.petitcaillou.service;
 
-import java.util.List;
+import java.time.LocalDate;
 
-import com.petitcaillou.domain.company.CompanyId;
-import com.petitcaillou.domain.company.CompanyRepository;
-import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
 import com.petitcaillou.domain.jobapplication.JobApplication;
 import com.petitcaillou.domain.jobapplication.JobApplicationDetails;
 import com.petitcaillou.domain.jobapplication.JobApplicationId;
 import com.petitcaillou.domain.jobapplication.JobApplicationRepository;
+import com.petitcaillou.domain.jobapplication.ResponseStatus;
+import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationAlreadyExistsException;
 import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationNotFoundException;
+import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.offer.exceptions.OfferNotFoundException;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 import com.petitcaillou.domain.user.Username;
 
 public class JobApplicationService
 {
   private final JobApplicationRepository applications;
-  private final CompanyRepository companies;
+  private final OfferRepository offers;
 
-  public JobApplicationService(JobApplicationRepository applications, CompanyRepository companies)
+  public JobApplicationService(JobApplicationRepository applications, OfferRepository offers)
   {
     this.applications = applications;
-    this.companies = companies;
+    this.offers = offers;
   }
 
-  public JobApplication create(Username owner, JobApplicationDetails details)
+  public JobApplication apply(Username owner, JobApplicationDetails details)
   {
-    requireCompany(details.companyId());
+    requireVisibleOffer(owner, details.offerId());
+
+    if (applications.existsByOwnerAndOffer(owner, details.offerId()))
+    {
+      throw new JobApplicationAlreadyExistsException();
+    }
+
     return applications.save(JobApplication.create(owner, details));
   }
 
-  public JobApplication update(Username owner, JobApplicationId id, JobApplicationDetails details)
+  public JobApplication updateTracking(Username owner, JobApplicationId id, LocalDate applicationDate,
+    ResponseStatus responseStatus, String notes)
   {
-    requireCompany(details.companyId());
     JobApplication application = ownedApplication(owner, id);
-    return applications.save(application.update(details));
+    return applications.save(application.updateTracking(applicationDate, responseStatus, notes));
   }
 
   public void delete(Username owner, JobApplicationId id)
@@ -47,21 +57,16 @@ public class JobApplicationService
     return ownedApplication(owner, id);
   }
 
-  public List<JobApplication> list(Username owner)
+  public Page<JobApplication> list(Username owner, PageRequest pageRequest)
   {
-    return applications.findByOwner(owner);
+    return applications.findByOwner(owner, pageRequest);
   }
 
-  public List<JobApplication> listByCompany(Username owner, CompanyId companyId)
+  private void requireVisibleOffer(Username owner, OfferId offerId)
   {
-    return applications.findByOwnerAndCompany(owner, companyId);
-  }
-
-  private void requireCompany(CompanyId companyId)
-  {
-    if (companyId == null || !companies.existsById(companyId))
+    if (offerId == null || !offers.findById(offerId).map(offer -> offer.isVisibleTo(owner)).orElse(false))
     {
-      throw new CompanyNotFoundException();
+      throw new OfferNotFoundException();
     }
   }
 

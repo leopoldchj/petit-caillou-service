@@ -15,7 +15,9 @@ import com.petitcaillou.domain.authentication.exceptions.InvalidCredentialsExcep
 import com.petitcaillou.domain.company.exceptions.CompanyInUseException;
 import com.petitcaillou.domain.company.exceptions.CompanyNameAlreadyUsedException;
 import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
+import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationAlreadyExistsException;
 import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationNotFoundException;
+import com.petitcaillou.domain.offer.exceptions.OfferNotFoundException;
 import com.petitcaillou.domain.user.exceptions.UsernameAlreadyUsedException;
 import com.petitcaillou.domain.user.exceptions.EmailAlreadyUsedException;
 import com.petitcaillou.domain.user.exceptions.WeakPasswordException;
@@ -60,6 +62,18 @@ public class ApiExceptionHandler
     return problem(HttpStatus.NOT_FOUND, exception.getMessage());
   }
 
+  @ExceptionHandler(OfferNotFoundException.class)
+  public ProblemDetail onOfferNotFound(OfferNotFoundException exception)
+  {
+    return problem(HttpStatus.NOT_FOUND, exception.getMessage());
+  }
+
+  @ExceptionHandler(JobApplicationAlreadyExistsException.class)
+  public ProblemDetail onJobApplicationAlreadyExists(JobApplicationAlreadyExistsException exception)
+  {
+    return problem(HttpStatus.CONFLICT, exception.getMessage());
+  }
+
   @ExceptionHandler(CompanyNameAlreadyUsedException.class)
   public ProblemDetail onCompanyNameAlreadyUsed(CompanyNameAlreadyUsedException exception)
   {
@@ -95,7 +109,7 @@ public class ApiExceptionHandler
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ProblemDetail onUnreadableBody(HttpMessageNotReadableException exception)
+  public ProblemDetail onUnreadableBody()
   {
     return problem(HttpStatus.BAD_REQUEST, "Malformed request body");
   }

@@ -13,7 +13,16 @@ final class CompanyMapper
 
   static CompanyEntity toEntity(Company company)
   {
-    return new CompanyEntity(company.id().value().toString(), company.name(), company.website());
+    return new CompanyEntity(
+      company.id().value().toString(),
+      company.name(),
+      company.normalizedName().value(),
+      company.website() == null ? null : company.website().value());
+  }
+
+  static CompanyEntity toNewEntity(Company source)
+  {
+    return toEntity(source).asNew();
   }
 
   static Company toDomain(CompanyEntity entity)

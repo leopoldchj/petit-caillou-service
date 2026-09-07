@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
-import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.offer.OfferId;
 import com.petitcaillou.domain.user.Username;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,90 +13,84 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JobApplicationTest
 {
-  private static final Username OWNER = Username.of("john_doe");
-  private static final Username OTHER = Username.of("jane_doe");
-  private static final CompanyId COMPANY = CompanyId.of(UUID.randomUUID());
-  private static final JobApplicationDetails DETAILS = new JobApplicationDetails(
-    "https://jobs.example.com/1", COMPANY, "Backend engineer", "A role", "Paris", LocalDate.of(2026, 1, 15), null);
+  private static final Username OWNER = Username.of("owner");
+  private static final OfferId OFFER = OfferId.of(UUID.randomUUID());
 
-  @Test
-  void given_nullCompany_when_creating_then_rejectsIt()
+  private JobApplicationDetails details(ResponseStatus status)
   {
-    JobApplicationDetails details = new JobApplicationDetails(null, null, "Backend engineer", null, null, null, null);
-
-    assertThatThrownBy(() -> JobApplication.create(OWNER, details))
-      .isInstanceOf(IllegalArgumentException.class);
+    return new JobApplicationDetails(OFFER, LocalDate.of(2026, 1, 15), status, "note");
   }
 
   @Test
-  void given_nullTitle_when_creating_then_rejectsIt()
+  void given_details_when_created_then_linksToTheOffer()
   {
-    JobApplicationDetails details = new JobApplicationDetails(null, COMPANY, null, null, null, null, null);
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.INTERVIEW));
 
-    assertThatThrownBy(() -> JobApplication.create(OWNER, details))
-      .isInstanceOf(IllegalArgumentException.class);
+    assertThat(application.offerId()).isEqualTo(OFFER);
   }
 
   @Test
-  void given_blankTitle_when_creating_then_rejectsIt()
+  void given_nullStatus_when_created_then_defaultsToNoResponse()
   {
-    JobApplicationDetails details = new JobApplicationDetails(null, COMPANY, "   ", null, null, null, null);
-
-    assertThatThrownBy(() -> JobApplication.create(OWNER, details))
-      .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  void given_nullResponseStatus_when_creating_then_defaultsToNoResponse()
-  {
-    JobApplication application = JobApplication.create(OWNER, DETAILS);
+    JobApplication application = JobApplication.create(OWNER, details(null));
 
     assertThat(application.responseStatus()).isEqualTo(ResponseStatus.NO_RESPONSE);
   }
 
   @Test
-  void given_detailsWithLocation_when_creating_then_exposesTheLocation()
+  void given_missingOffer_when_created_then_throws()
   {
-    JobApplication application = JobApplication.create(OWNER, DETAILS);
+    JobApplicationDetails invalid = new JobApplicationDetails(null, null, ResponseStatus.NO_RESPONSE, null);
 
-    assertThat(application.location()).isEqualTo("Paris");
+    assertThatThrownBy(() -> JobApplication.create(OWNER, invalid))
+      .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  void given_ownerAndDetails_when_creating_then_isOwnedByThatOwner()
+  void given_owner_when_checkingOwnership_then_recognisesTheOwner()
   {
-    JobApplication application = JobApplication.create(OWNER, DETAILS);
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
 
     assertThat(application.isOwnedBy(OWNER)).isTrue();
   }
 
   @Test
-  void given_anotherUsername_when_checkingOwnership_then_returnsFalse()
+  void given_application_when_updatingTracking_then_changesTheStatus()
   {
-    JobApplication application = JobApplication.create(OWNER, DETAILS);
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
 
-    assertThat(application.isOwnedBy(OTHER)).isFalse();
+    JobApplication updated = application.updateTracking(LocalDate.of(2026, 2, 1), ResponseStatus.ACCEPTED, "great");
+
+    assertThat(updated.responseStatus()).isEqualTo(ResponseStatus.ACCEPTED);
   }
 
   @Test
-  void given_newDetails_when_updating_then_keepsTheSameId()
+  void given_application_when_updatingTracking_then_keepsTheSameOffer()
   {
-    JobApplication application = JobApplication.create(OWNER, DETAILS);
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
 
-    JobApplication updated = application.update(new JobApplicationDetails(
-      null, COMPANY, "Frontend engineer", null, null, null, ResponseStatus.INTERVIEW));
+    JobApplication updated = application.updateTracking(LocalDate.of(2026, 2, 1), ResponseStatus.ACCEPTED, "great");
 
-    assertThat(updated.id()).isEqualTo(application.id());
+    assertThat(updated.offerId()).isEqualTo(OFFER);
   }
 
   @Test
-  void given_newDetails_when_updating_then_appliesTheNewTitle()
+  void given_nullDate_when_updatingTracking_then_keepsTheExistingDate()
   {
-    JobApplication application = JobApplication.create(OWNER, DETAILS);
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
 
-    JobApplication updated = application.update(new JobApplicationDetails(
-      null, COMPANY, "Frontend engineer", null, null, null, ResponseStatus.INTERVIEW));
+    JobApplication updated = application.updateTracking(null, ResponseStatus.ACCEPTED, null);
 
-    assertThat(updated.title()).isEqualTo("Frontend engineer");
+    assertThat(updated.applicationDate()).isEqualTo(LocalDate.of(2026, 1, 15));
+  }
+
+  @Test
+  void given_nullNotes_when_updatingTracking_then_keepsTheExistingNotes()
+  {
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
+
+    JobApplication updated = application.updateTracking(null, null, null);
+
+    assertThat(updated.notes()).isEqualTo("note");
   }
 }

@@ -22,20 +22,8 @@ public class JobApplicationEntity
   @Column(name = "owner_username", nullable = false, updatable = false, length = 30)
   private String ownerUsername;
 
-  @Column(name = "company_id", nullable = false, length = 36)
-  private String companyId;
-
-  @Column(name = "link", length = 2048)
-  private String link;
-
-  @Column(name = "title", nullable = false, length = 255)
-  private String title;
-
-  @Column(name = "description", length = 2000)
-  private String description;
-
-  @Column(name = "location", length = 255)
-  private String location;
+  @Column(name = "offer_id", nullable = false, updatable = false, length = 36)
+  private String offerId;
 
   @Column(name = "application_date")
   private LocalDate applicationDate;
@@ -44,22 +32,22 @@ public class JobApplicationEntity
   @Column(name = "response_status", nullable = false, length = 20)
   private ResponseStatus responseStatus;
 
+  @Column(name = "notes", length = 2000)
+  private String notes;
+
   protected JobApplicationEntity()
   {
   }
 
-  public JobApplicationEntity(String id, String ownerUsername, String companyId, String link, String title,
-    String description, String location, LocalDate applicationDate, ResponseStatus responseStatus)
+  public JobApplicationEntity(String id, String ownerUsername, String offerId, LocalDate applicationDate,
+    ResponseStatus responseStatus, String notes)
   {
     this.id = id;
     this.ownerUsername = ownerUsername;
-    this.companyId = companyId;
-    this.link = link;
-    this.title = title;
-    this.description = description;
-    this.location = location;
+    this.offerId = offerId;
     this.applicationDate = applicationDate;
     this.responseStatus = responseStatus;
+    this.notes = notes;
   }
 
   public String getId()
@@ -72,29 +60,9 @@ public class JobApplicationEntity
     return ownerUsername;
   }
 
-  public String getCompanyId()
+  public String getOfferId()
   {
-    return companyId;
-  }
-
-  public String getLink()
-  {
-    return link;
-  }
-
-  public String getTitle()
-  {
-    return title;
-  }
-
-  public String getDescription()
-  {
-    return description;
-  }
-
-  public String getLocation()
-  {
-    return location;
+    return offerId;
   }
 
   public LocalDate getApplicationDate()
@@ -105,5 +73,10 @@ public class JobApplicationEntity
   public ResponseStatus getResponseStatus()
   {
     return responseStatus;
+  }
+
+  public String getNotes()
+  {
+    return notes;
   }
 }

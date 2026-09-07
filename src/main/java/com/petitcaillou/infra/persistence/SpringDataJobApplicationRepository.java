@@ -1,14 +1,12 @@
 package com.petitcaillou.infra.persistence;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 interface SpringDataJobApplicationRepository extends JpaRepository<JobApplicationEntity, String>
 {
-  List<JobApplicationEntity> findByOwnerUsername(String ownerUsername);
+  Page<JobApplicationEntity> findByOwnerUsername(String ownerUsername, Pageable pageable);
 
-  List<JobApplicationEntity> findByOwnerUsernameAndCompanyId(String ownerUsername, String companyId);
-
-  boolean existsByCompanyId(String companyId);
+  boolean existsByOwnerUsernameAndOfferId(String ownerUsername, String offerId);
 }

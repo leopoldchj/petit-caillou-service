@@ -1,6 +1,5 @@
 package com.petitcaillou.application;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 
 import com.petitcaillou.application.dto.CompanyRequest;
 import com.petitcaillou.application.dto.CompanyView;
+import com.petitcaillou.application.dto.PageView;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.service.CompanyService;
 
@@ -33,9 +34,18 @@ public class CompanyResource
   }
 
   @GetMapping
-  public List<CompanyView> list()
+  public PageView<CompanyView> list(
+    @RequestParam(name = "query", required = false) String query,
+    @RequestParam(name = "page", required = false) Integer page,
+    @RequestParam(name = "size", required = false) Integer size)
   {
-    return companyService.all().stream().map(CompanyView::from).toList();
+    return PageView.from(companyService.search(query, PageParams.of(page, size)), CompanyView::from);
+  }
+
+  @GetMapping("/{id}")
+  public CompanyView get(@PathVariable String id)
+  {
+    return CompanyView.from(companyService.byId(companyId(id)));
   }
 
   @PostMapping

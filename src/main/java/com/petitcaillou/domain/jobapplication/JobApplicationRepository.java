@@ -1,9 +1,10 @@
 package com.petitcaillou.domain.jobapplication;
 
-import java.util.List;
 import java.util.Optional;
 
-import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 import com.petitcaillou.domain.user.Username;
 
 public interface JobApplicationRepository
@@ -12,11 +13,9 @@ public interface JobApplicationRepository
 
   Optional<JobApplication> findById(JobApplicationId id);
 
-  List<JobApplication> findByOwner(Username owner);
+  Page<JobApplication> findByOwner(Username owner, PageRequest pageRequest);
 
-  List<JobApplication> findByOwnerAndCompany(Username owner, CompanyId companyId);
-
-  boolean existsByCompany(CompanyId companyId);
+  boolean existsByOwnerAndOffer(Username owner, OfferId offerId);
 
   void deleteById(JobApplicationId id);
 }

@@ -8,14 +8,20 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.petitcaillou.domain.company.CompanyId;
-import com.petitcaillou.domain.company.CompanyRepository;
-import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
 import com.petitcaillou.domain.jobapplication.JobApplication;
 import com.petitcaillou.domain.jobapplication.JobApplicationDetails;
 import com.petitcaillou.domain.jobapplication.JobApplicationId;
 import com.petitcaillou.domain.jobapplication.JobApplicationRepository;
 import com.petitcaillou.domain.jobapplication.ResponseStatus;
+import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationAlreadyExistsException;
 import com.petitcaillou.domain.jobapplication.exceptions.JobApplicationNotFoundException;
+import com.petitcaillou.domain.offer.Offer;
+import com.petitcaillou.domain.offer.OfferDetails;
+import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.offer.exceptions.OfferNotFoundException;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 import com.petitcaillou.domain.user.Username;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,14 +38,20 @@ class JobApplicationServiceTest
   private static final Username OWNER = Username.of("owner");
   private static final Username OTHER = Username.of("other");
   private static final JobApplicationId ID = JobApplicationId.of(UUID.randomUUID());
-  private static final CompanyId COMPANY = CompanyId.of(UUID.randomUUID());
-  private static final JobApplicationDetails DETAILS = new JobApplicationDetails(
-    "https://jobs.example.com/1", COMPANY, "Backend engineer", "A role", "Paris", LocalDate.of(2026, 1, 15),
-    ResponseStatus.NO_RESPONSE);
+  private static final OfferId OFFER = OfferId.of(UUID.randomUUID());
+  private static final JobApplicationDetails DETAILS =
+    new JobApplicationDetails(OFFER, LocalDate.of(2026, 1, 15), ResponseStatus.NO_RESPONSE, "note");
 
   private final JobApplicationRepository applications = mock(JobApplicationRepository.class);
-  private final CompanyRepository companies = mock(CompanyRepository.class);
-  private final JobApplicationService service = new JobApplicationService(applications, companies);
+  private final OfferRepository offers = mock(OfferRepository.class);
+  private final JobApplicationService service = new JobApplicationService(applications, offers);
+
+  private Offer offerOwnedBy(Username creator)
+  {
+    OfferDetails details =
+      new OfferDetails(CompanyId.of(UUID.randomUUID()), "Backend", "Paris", LocalDate.of(2026, 1, 1), null, null);
+    return Offer.reconstitute(OFFER, creator, details, true);
+  }
 
   private JobApplication ownedBy(Username owner)
   {
@@ -47,94 +59,82 @@ class JobApplicationServiceTest
   }
 
   @Test
-  void given_knownCompany_when_creating_then_savesTheApplication()
+  void given_visibleOffer_when_applying_then_saves()
   {
-    when(companies.existsById(COMPANY)).thenReturn(true);
+    when(offers.findById(OFFER)).thenReturn(Optional.of(offerOwnedBy(OWNER)));
+    when(applications.existsByOwnerAndOffer(OWNER, OFFER)).thenReturn(false);
     when(applications.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-    service.create(OWNER, DETAILS);
+    service.apply(OWNER, DETAILS);
 
     verify(applications).save(any(JobApplication.class));
   }
 
   @Test
-  void given_knownCompany_when_creating_then_theApplicationIsOwnedByThatOwner()
+  void given_offerNotVisible_when_applying_then_throwsOfferNotFound()
   {
-    when(companies.existsById(COMPANY)).thenReturn(true);
-    when(applications.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    when(offers.findById(OFFER)).thenReturn(Optional.of(offerOwnedBy(OTHER)));
 
-    JobApplication created = service.create(OWNER, DETAILS);
-
-    assertThat(created.isOwnedBy(OWNER)).isTrue();
+    assertThatThrownBy(() -> service.apply(OWNER, DETAILS))
+      .isInstanceOf(OfferNotFoundException.class);
   }
 
   @Test
-  void given_unknownCompany_when_creating_then_throwsCompanyNotFound()
+  void given_missingOffer_when_applying_then_throwsOfferNotFound()
   {
-    when(companies.existsById(COMPANY)).thenReturn(false);
+    when(offers.findById(OFFER)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.create(OWNER, DETAILS))
-      .isInstanceOf(CompanyNotFoundException.class);
+    assertThatThrownBy(() -> service.apply(OWNER, DETAILS))
+      .isInstanceOf(OfferNotFoundException.class);
   }
 
   @Test
-  void given_unknownCompany_when_creating_then_neverSaves()
+  void given_alreadyApplied_when_applying_then_throwsAlreadyExists()
   {
-    when(companies.existsById(COMPANY)).thenReturn(false);
-    catchThrowable(() -> service.create(OWNER, DETAILS));
+    when(offers.findById(OFFER)).thenReturn(Optional.of(offerOwnedBy(OWNER)));
+    when(applications.existsByOwnerAndOffer(OWNER, OFFER)).thenReturn(true);
+
+    assertThatThrownBy(() -> service.apply(OWNER, DETAILS))
+      .isInstanceOf(JobApplicationAlreadyExistsException.class);
+  }
+
+  @Test
+  void given_alreadyApplied_when_applying_then_neverSaves()
+  {
+    when(offers.findById(OFFER)).thenReturn(Optional.of(offerOwnedBy(OWNER)));
+    when(applications.existsByOwnerAndOffer(OWNER, OFFER)).thenReturn(true);
+    catchThrowable(() -> service.apply(OWNER, DETAILS));
 
     verify(applications, never()).save(any());
   }
 
   @Test
-  void given_ownedApplication_when_updating_then_savesTheUpdatedApplication()
+  void given_ownedApplication_when_updatingTracking_then_saves()
   {
-    when(companies.existsById(COMPANY)).thenReturn(true);
     when(applications.findById(ID)).thenReturn(Optional.of(ownedBy(OWNER)));
     when(applications.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-    service.update(OWNER, ID, DETAILS);
+    service.updateTracking(OWNER, ID, LocalDate.of(2026, 2, 1), ResponseStatus.ACCEPTED, "great");
 
     verify(applications).save(any(JobApplication.class));
   }
 
   @Test
-  void given_unknownCompany_when_updating_then_throwsCompanyNotFound()
+  void given_applicationOwnedByAnother_when_updatingTracking_then_throwsNotFound()
   {
-    when(companies.existsById(COMPANY)).thenReturn(false);
+    when(applications.findById(ID)).thenReturn(Optional.of(ownedBy(OTHER)));
 
-    assertThatThrownBy(() -> service.update(OWNER, ID, DETAILS))
-      .isInstanceOf(CompanyNotFoundException.class);
+    assertThatThrownBy(() -> service.updateTracking(OWNER, ID, null, ResponseStatus.ACCEPTED, null))
+      .isInstanceOf(JobApplicationNotFoundException.class);
   }
 
   @Test
-  void given_missingApplication_when_updating_then_throwsNotFound()
+  void given_missingApplication_when_updatingTracking_then_throwsNotFound()
   {
-    when(companies.existsById(COMPANY)).thenReturn(true);
     when(applications.findById(ID)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.update(OWNER, ID, DETAILS))
+    assertThatThrownBy(() -> service.updateTracking(OWNER, ID, null, ResponseStatus.ACCEPTED, null))
       .isInstanceOf(JobApplicationNotFoundException.class);
-  }
-
-  @Test
-  void given_applicationOwnedByAnother_when_updating_then_throwsNotFound()
-  {
-    when(companies.existsById(COMPANY)).thenReturn(true);
-    when(applications.findById(ID)).thenReturn(Optional.of(ownedBy(OTHER)));
-
-    assertThatThrownBy(() -> service.update(OWNER, ID, DETAILS))
-      .isInstanceOf(JobApplicationNotFoundException.class);
-  }
-
-  @Test
-  void given_applicationOwnedByAnother_when_updating_then_neverSaves()
-  {
-    when(companies.existsById(COMPANY)).thenReturn(true);
-    when(applications.findById(ID)).thenReturn(Optional.of(ownedBy(OTHER)));
-    catchThrowable(() -> service.update(OWNER, ID, DETAILS));
-
-    verify(applications, never()).save(any());
   }
 
   @Test
@@ -165,27 +165,12 @@ class JobApplicationServiceTest
   }
 
   @Test
-  void given_applicationOwnedByAnother_when_gettingById_then_throwsNotFound()
+  void given_owner_when_listing_then_returnsTheirPage()
   {
-    when(applications.findById(ID)).thenReturn(Optional.of(ownedBy(OTHER)));
+    PageRequest pageRequest = new PageRequest(0, 20);
+    when(applications.findByOwner(OWNER, pageRequest))
+      .thenReturn(new Page<>(List.of(ownedBy(OWNER)), 0, 20, 1));
 
-    assertThatThrownBy(() -> service.byId(OWNER, ID))
-      .isInstanceOf(JobApplicationNotFoundException.class);
-  }
-
-  @Test
-  void given_owner_when_listing_then_returnsOwnerApplications()
-  {
-    when(applications.findByOwner(OWNER)).thenReturn(List.of(ownedBy(OWNER)));
-
-    assertThat(service.list(OWNER)).hasSize(1);
-  }
-
-  @Test
-  void given_ownerAndCompany_when_listingByCompany_then_returnsFilteredApplications()
-  {
-    when(applications.findByOwnerAndCompany(OWNER, COMPANY)).thenReturn(List.of(ownedBy(OWNER)));
-
-    assertThat(service.listByCompany(OWNER, COMPANY)).hasSize(1);
+    assertThat(service.list(OWNER, pageRequest).totalElements()).isEqualTo(1);
   }
 }
