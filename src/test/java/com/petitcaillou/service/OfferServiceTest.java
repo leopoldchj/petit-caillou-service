@@ -14,7 +14,6 @@ import com.petitcaillou.domain.offer.Offer;
 import com.petitcaillou.domain.offer.OfferDetails;
 import com.petitcaillou.domain.offer.OfferId;
 import com.petitcaillou.domain.offer.OfferRepository;
-import com.petitcaillou.domain.offer.SystemAccount;
 import com.petitcaillou.domain.offer.exceptions.OfferNotFoundException;
 import com.petitcaillou.domain.pagination.Page;
 import com.petitcaillou.domain.pagination.PageRequest;
@@ -44,7 +43,7 @@ class OfferServiceTest
   void given_knownCompanyAndNoDuplicate_when_creatingPrivate_then_saves()
   {
     when(companies.existsById(COMPANY)).thenReturn(true);
-    when(offers.findByHashAndCreatedBy(any(), any())).thenReturn(Optional.empty());
+    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.empty());
     when(offers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     service.createPrivate(USER, DETAILS);
@@ -62,11 +61,11 @@ class OfferServiceTest
   }
 
   @Test
-  void given_duplicateHashInScope_when_creating_then_returnsExistingWithoutSaving()
+  void given_duplicate_when_creatingPrivate_then_returnsExistingWithoutSaving()
   {
     Offer existing = Offer.reconstitute(ID, USER, DETAILS, true);
     when(companies.existsById(COMPANY)).thenReturn(true);
-    when(offers.findByHashAndCreatedBy(any(), any())).thenReturn(Optional.of(existing));
+    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.of(existing));
 
     Offer result = service.createPrivate(USER, DETAILS);
 
@@ -74,26 +73,15 @@ class OfferServiceTest
   }
 
   @Test
-  void given_duplicateHashInScope_when_creating_then_neverSaves()
+  void given_duplicate_when_creatingPrivate_then_neverSaves()
   {
     when(companies.existsById(COMPANY)).thenReturn(true);
-    when(offers.findByHashAndCreatedBy(any(), any())).thenReturn(Optional.of(Offer.reconstitute(ID, USER, DETAILS, true)));
+    when(offers.findByDedupKeyAndCreatedBy(any(), any()))
+      .thenReturn(Optional.of(Offer.reconstitute(ID, USER, DETAILS, true)));
 
     service.createPrivate(USER, DETAILS);
 
     verify(offers, never()).save(any());
-  }
-
-  @Test
-  void given_ingestion_when_persisting_then_offerIsPublic()
-  {
-    when(companies.existsById(COMPANY)).thenReturn(true);
-    when(offers.findByHashAndCreatedBy(any(), any())).thenReturn(Optional.empty());
-    when(offers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-    Offer ingested = service.ingest(DETAILS, false);
-
-    assertThat(ingested.createdBy()).isEqualTo(SystemAccount.USERNAME);
   }
 
   @Test
@@ -120,6 +108,14 @@ class OfferServiceTest
 
     assertThatThrownBy(() -> service.byId(USER, ID))
       .isInstanceOf(OfferNotFoundException.class);
+  }
+
+  @Test
+  void given_ids_when_lookingUpByIds_then_keysById()
+  {
+    when(offers.findAllByIds(any())).thenReturn(List.of(Offer.reconstitute(ID, USER, DETAILS, true)));
+
+    assertThat(service.byIds(List.of(ID))).containsKey(ID);
   }
 
   @Test

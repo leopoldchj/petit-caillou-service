@@ -24,11 +24,21 @@ public final class ContentHash
   {
     String seed = String.join(
       "|",
+      "content",
       companyId.value().toString(),
       TextNormalizer.fold(title),
       TextNormalizer.fold(location),
       publicationDate == null ? "" : publicationDate.toString());
     return new ContentHash(sha256(seed));
+  }
+
+  public static ContentHash ofSource(String source, String externalId)
+  {
+    if (source == null || source.isBlank() || externalId == null || externalId.isBlank())
+    {
+      throw new IllegalArgumentException("A source and external identifier are required");
+    }
+    return new ContentHash(sha256(String.join("|", "source", source.strip(), externalId.strip())));
   }
 
   public static ContentHash ofValue(String value)
@@ -57,15 +67,8 @@ public final class ContentHash
   @Override
   public boolean equals(Object other)
   {
-    if (this == other)
-    {
-      return true;
-    }
-    if (!(other instanceof ContentHash hash))
-    {
-      return false;
-    }
-    return value.equals(hash.value);
+    return this == other
+      || other instanceof ContentHash hash && value.equals(hash.value);
   }
 
   @Override

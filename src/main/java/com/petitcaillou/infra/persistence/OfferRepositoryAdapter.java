@@ -1,5 +1,6 @@
 package com.petitcaillou.infra.persistence;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +20,7 @@ import com.petitcaillou.domain.user.Username;
 @Component
 public class OfferRepositoryAdapter implements OfferRepository
 {
-  private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "publicationDate");
+  private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "publicationDate").and(Sort.by("id"));
 
   private final SpringDataOfferRepository jpa;
 
@@ -41,15 +42,22 @@ public class OfferRepositoryAdapter implements OfferRepository
   }
 
   @Override
+  public List<Offer> findAllByIds(Collection<OfferId> ids)
+  {
+    return jpa.findAllById(ids.stream().map(id -> id.value().toString()).toList())
+      .stream().map(OfferMapper::toDomain).toList();
+  }
+
+  @Override
   public boolean existsByCompany(CompanyId companyId)
   {
     return jpa.existsByCompanyId(companyId.value().toString());
   }
 
   @Override
-  public Optional<Offer> findByHashAndCreatedBy(ContentHash hash, Username createdBy)
+  public Optional<Offer> findByDedupKeyAndCreatedBy(ContentHash dedupKey, Username createdBy)
   {
-    return jpa.findByContentHashAndCreatedBy(hash.value(), createdBy.value()).map(OfferMapper::toDomain);
+    return jpa.findByContentHashAndCreatedBy(dedupKey.value(), createdBy.value()).map(OfferMapper::toDomain);
   }
 
   @Override

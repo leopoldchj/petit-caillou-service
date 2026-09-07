@@ -3,6 +3,7 @@ package com.petitcaillou.infra.persistence;
 import java.util.UUID;
 
 import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.offer.ContentHash;
 import com.petitcaillou.domain.offer.Offer;
 import com.petitcaillou.domain.offer.OfferDetails;
 import com.petitcaillou.domain.offer.OfferId;
@@ -26,7 +27,7 @@ final class OfferMapper
       offer.description(),
       offer.createdBy().value(),
       offer.verified(),
-      offer.contentHash().value());
+      offer.dedupKey().value());
   }
 
   static Offer toDomain(OfferEntity entity)
@@ -43,6 +44,7 @@ final class OfferMapper
       OfferId.of(UUID.fromString(entity.getId())),
       Username.of(entity.getCreatedBy()),
       details,
-      entity.isVerified());
+      entity.isVerified(),
+      ContentHash.ofValue(entity.getContentHash()));
   }
 }

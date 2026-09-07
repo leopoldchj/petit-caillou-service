@@ -1,5 +1,6 @@
 package com.petitcaillou.application;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -21,11 +22,14 @@ import com.petitcaillou.application.dto.JobApplicationUpdateRequest;
 import com.petitcaillou.application.dto.JobApplicationView;
 import com.petitcaillou.application.dto.PageView;
 import com.petitcaillou.domain.authentication.AuthenticatedUser;
+import com.petitcaillou.domain.company.Company;
+import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.jobapplication.JobApplication;
 import com.petitcaillou.domain.jobapplication.JobApplicationDetails;
 import com.petitcaillou.domain.jobapplication.JobApplicationId;
 import com.petitcaillou.domain.offer.Offer;
 import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.pagination.Page;
 import com.petitcaillou.service.CompanyService;
 import com.petitcaillou.service.JobApplicationService;
 import com.petitcaillou.service.OfferService;
@@ -51,9 +55,15 @@ public class JobApplicationResource
     @RequestParam(name = "page", required = false) Integer page,
     @RequestParam(name = "size", required = false) Integer size)
   {
-    return PageView.from(
-      jobApplicationService.list(current.username(), PageParams.of(page, size)),
-      application -> view(current, application));
+    Page<JobApplication> applications = jobApplicationService.list(current.username(), PageParams.of(page, size));
+    Map<OfferId, Offer> offers = offerService.byIds(applications.items().stream().map(JobApplication::offerId).toList());
+    Map<CompanyId, Company> companies =
+      companyService.byIds(offers.values().stream().map(Offer::companyId).toList());
+    return PageView.from(applications, application ->
+    {
+      Offer offer = offers.get(application.offerId());
+      return JobApplicationView.from(application, offer, companies.get(offer.companyId()));
+    });
   }
 
   @GetMapping("/{id}")

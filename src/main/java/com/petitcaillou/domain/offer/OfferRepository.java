@@ -1,5 +1,7 @@
 package com.petitcaillou.domain.offer;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import com.petitcaillou.domain.company.CompanyId;
@@ -13,9 +15,11 @@ public interface OfferRepository
 
   Optional<Offer> findById(OfferId id);
 
+  List<Offer> findAllByIds(Collection<OfferId> ids);
+
   boolean existsByCompany(CompanyId companyId);
 
-  Optional<Offer> findByHashAndCreatedBy(ContentHash hash, Username createdBy);
+  Optional<Offer> findByDedupKeyAndCreatedBy(ContentHash dedupKey, Username createdBy);
 
   Page<Offer> findVisibleTo(Username user, PageRequest pageRequest);
 

@@ -14,6 +14,8 @@ import com.petitcaillou.domain.company.exceptions.CompanyInUseException;
 import com.petitcaillou.domain.company.exceptions.CompanyNameAlreadyUsedException;
 import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
 import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -59,25 +61,6 @@ class CompanyServiceTest
     assertThatExceptionOfType(CompanyNameAlreadyUsedException.class)
       .isThrownBy(() -> service.create("ACME", null))
       .satisfies(exception -> assertThat(exception.existingId()).isEqualTo(ID));
-  }
-
-  @Test
-  void given_existingNormalizedMatch_when_resolving_then_reusesIt()
-  {
-    when(companies.findByNormalizedName(ACME)).thenReturn(Optional.of(company(ID, "Acme")));
-
-    assertThat(service.resolveOrCreate("ACME", null).id()).isEqualTo(ID);
-  }
-
-  @Test
-  void given_noMatch_when_resolving_then_createsAndSaves()
-  {
-    when(companies.findByNormalizedName(ACME)).thenReturn(Optional.empty());
-    when(companies.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-    service.resolveOrCreate("ACME", null);
-
-    verify(companies).save(any(Company.class));
   }
 
   @Test
@@ -161,10 +144,20 @@ class CompanyServiceTest
   }
 
   @Test
-  void given_storedCompanies_when_listingAll_then_returnsThem()
+  void given_ids_when_lookingUpByIds_then_keysById()
   {
-    when(companies.findAll()).thenReturn(List.of(Company.create("ACME", null)));
+    when(companies.findAllByIds(any())).thenReturn(List.of(company(ID, "ACME")));
 
-    assertThat(service.all()).hasSize(1);
+    assertThat(service.byIds(List.of(ID))).containsKey(ID);
+  }
+
+  @Test
+  void given_query_when_searching_then_foldsTheQueryAndDelegates()
+  {
+    PageRequest pageRequest = new PageRequest(0, 20);
+    when(companies.search("acme", pageRequest))
+      .thenReturn(new Page<>(List.of(company(ID, "ACME")), 0, 20, 1));
+
+    assertThat(service.search("ACME", pageRequest).totalElements()).isEqualTo(1);
   }
 }

@@ -1,6 +1,9 @@
 package com.petitcaillou.service;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
@@ -10,6 +13,9 @@ import com.petitcaillou.domain.company.exceptions.CompanyInUseException;
 import com.petitcaillou.domain.company.exceptions.CompanyNameAlreadyUsedException;
 import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
 import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
+import com.petitcaillou.domain.text.TextNormalizer;
 
 public class CompanyService
 {
@@ -27,13 +33,6 @@ public class CompanyService
     Company company = Company.create(name, website);
     requireUniqueName(company.normalizedName(), null);
     return companies.save(company);
-  }
-
-  public Company resolveOrCreate(String name, String website)
-  {
-    Company candidate = Company.create(name, website);
-    return companies.findByNormalizedName(candidate.normalizedName())
-      .orElseGet(() -> companies.save(candidate));
   }
 
   public Company update(CompanyId id, String name, String website)
@@ -63,9 +62,14 @@ public class CompanyService
       .orElseThrow(CompanyNotFoundException::new);
   }
 
-  public List<Company> all()
+  public Map<CompanyId, Company> byIds(Collection<CompanyId> ids)
   {
-    return companies.findAll();
+    return companies.findAllByIds(ids).stream().collect(Collectors.toMap(Company::id, Function.identity()));
+  }
+
+  public Page<Company> search(String query, PageRequest pageRequest)
+  {
+    return companies.search(TextNormalizer.fold(query), pageRequest);
   }
 
   private void requireUniqueName(NormalizedName normalizedName, CompanyId allowedId)

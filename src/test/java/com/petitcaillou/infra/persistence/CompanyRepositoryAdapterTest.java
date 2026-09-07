@@ -5,13 +5,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.company.NormalizedName;
+import com.petitcaillou.domain.pagination.PageRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,9 +38,7 @@ class CompanyRepositoryAdapterTest
   {
     when(jpa.save(any(CompanyEntity.class))).thenReturn(storedEntity());
 
-    Company saved = adapter.save(Company.reconstitute(CompanyId.of(ID), "ACME", null));
-
-    assertThat(saved.id().value()).isEqualTo(ID);
+    assertThat(adapter.save(Company.reconstitute(CompanyId.of(ID), "ACME", null)).id().value()).isEqualTo(ID);
   }
 
   @Test
@@ -43,9 +46,7 @@ class CompanyRepositoryAdapterTest
   {
     when(jpa.findById(ID.toString())).thenReturn(Optional.of(storedEntity()));
 
-    Optional<Company> found = adapter.findById(CompanyId.of(ID));
-
-    assertThat(found.orElseThrow().name()).isEqualTo("ACME");
+    assertThat(adapter.findById(CompanyId.of(ID)).orElseThrow().name()).isEqualTo("ACME");
   }
 
   @Test
@@ -53,9 +54,15 @@ class CompanyRepositoryAdapterTest
   {
     when(jpa.findByNormalizedName("acme")).thenReturn(Optional.of(storedEntity()));
 
-    Optional<Company> found = adapter.findByNormalizedName(NormalizedName.of("ACME"));
+    assertThat(adapter.findByNormalizedName(NormalizedName.of("ACME")).orElseThrow().id().value()).isEqualTo(ID);
+  }
 
-    assertThat(found.orElseThrow().id().value()).isEqualTo(ID);
+  @Test
+  void given_ids_when_findingAllByIds_then_returnsMappedCompanies()
+  {
+    when(jpa.findAllById(anyCollection())).thenReturn(List.of(storedEntity()));
+
+    assertThat(adapter.findAllByIds(List.of(CompanyId.of(ID)))).hasSize(1);
   }
 
   @Test
@@ -67,11 +74,12 @@ class CompanyRepositoryAdapterTest
   }
 
   @Test
-  void given_storedCompanies_when_findingAll_then_returnsMappedCompanies()
+  void given_prefix_when_searching_then_returnsMappedPage()
   {
-    when(jpa.findAll()).thenReturn(List.of(storedEntity()));
+    when(jpa.findByNormalizedNameStartingWith(eq("ac"), any(Pageable.class)))
+      .thenReturn(new PageImpl<>(List.of(storedEntity())));
 
-    assertThat(adapter.findAll()).hasSize(1);
+    assertThat(adapter.search("ac", new PageRequest(0, 20)).items()).hasSize(1);
   }
 
   @Test

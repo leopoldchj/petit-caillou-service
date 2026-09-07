@@ -33,15 +33,14 @@ class OfferRepositoryAdapterTest
 
   private OfferEntity storedEntity()
   {
-    return new OfferEntity(
-      ID.toString(), COMPANY.toString(), "Backend Engineer", "Paris", LocalDate.of(2026, 8, 30),
-      "https://x/1", "role", "alice", true, "hash");
+    return new OfferEntity(ID.toString(), COMPANY.toString(), "Backend Engineer", "Paris",
+      LocalDate.of(2026, 8, 30), "https://x/1", "role", "alice", true, "key");
   }
 
   private Offer domainOffer()
   {
-    OfferDetails details = new OfferDetails(
-      CompanyId.of(COMPANY), "Backend Engineer", "Paris", LocalDate.of(2026, 8, 30), "https://x/1", "role");
+    OfferDetails details = new OfferDetails(CompanyId.of(COMPANY), "Backend Engineer", "Paris",
+      LocalDate.of(2026, 8, 30), "https://x/1", "role");
     return Offer.reconstitute(OfferId.of(ID), Username.of("alice"), details, true);
   }
 
@@ -62,11 +61,19 @@ class OfferRepositoryAdapterTest
   }
 
   @Test
-  void given_hashAndScope_when_lookingUp_then_delegatesToJpa()
+  void given_ids_when_findingAllByIds_then_returnsMappedOffers()
   {
-    when(jpa.findByContentHashAndCreatedBy("hash", "alice")).thenReturn(Optional.of(storedEntity()));
+    when(jpa.findAllById(anyCollection())).thenReturn(List.of(storedEntity()));
 
-    assertThat(adapter.findByHashAndCreatedBy(ContentHash.ofValue("hash"), Username.of("alice"))).isPresent();
+    assertThat(adapter.findAllByIds(List.of(OfferId.of(ID)))).hasSize(1);
+  }
+
+  @Test
+  void given_dedupKeyAndScope_when_lookingUp_then_delegatesToJpa()
+  {
+    when(jpa.findByContentHashAndCreatedBy("key", "alice")).thenReturn(Optional.of(storedEntity()));
+
+    assertThat(adapter.findByDedupKeyAndCreatedBy(ContentHash.ofValue("key"), Username.of("alice"))).isPresent();
   }
 
   @Test

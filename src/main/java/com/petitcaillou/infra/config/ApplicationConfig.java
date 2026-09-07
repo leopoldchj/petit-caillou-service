@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import com.petitcaillou.domain.authentication.TokenIssuer;
 import com.petitcaillou.domain.company.CompanyRepository;
 import com.petitcaillou.domain.jobapplication.JobApplicationRepository;
+import com.petitcaillou.domain.offer.CatalogWriter;
 import com.petitcaillou.domain.offer.OfferRepository;
 import com.petitcaillou.domain.offer.OfferSource;
 import com.petitcaillou.domain.user.DefaultPasswordValidator;
@@ -60,8 +61,8 @@ public class ApplicationConfig
   }
 
   @Bean
-  OfferIngestionService offerIngestionService(OfferSource offerSource, CompanyService companies, OfferService offers)
+  OfferIngestionService offerIngestionService(OfferSource offerSource, CatalogWriter catalogWriter)
   {
-    return new OfferIngestionService(offerSource, companies, offers);
+    return new OfferIngestionService(offerSource, catalogWriter);
   }
 }

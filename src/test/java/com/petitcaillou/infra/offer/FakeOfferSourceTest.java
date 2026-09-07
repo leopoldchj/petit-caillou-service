@@ -17,7 +17,7 @@ class FakeOfferSourceTest
   {
     LocalDate since = LocalDate.of(2026, 1, 1);
 
-    ScannedOffer offer = source.fetch(since, LocalDate.of(2026, 1, 31)).get(0);
+    ScannedOffer offer = source.fetch(since, LocalDate.of(2026, 1, 31), null).items().getFirst();
 
     assertThat(offer.publicationDate()).isEqualTo(since);
   }

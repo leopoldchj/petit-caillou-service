@@ -2,6 +2,7 @@ package com.petitcaillou.application;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -62,17 +63,22 @@ class JobApplicationResourceTest
     return Offer.reconstitute(OfferId.of(OFFER), OWNER, details, true);
   }
 
-  private void stubView()
+  private Company company()
+  {
+    return Company.reconstitute(COMPANY, "ACME", null);
+  }
+
+  private void stubSingleView()
   {
     when(offerService.byId(eq(OWNER), any())).thenReturn(offer());
-    when(companyService.byId(COMPANY)).thenReturn(Company.reconstitute(COMPANY, "ACME", null));
+    when(companyService.byId(COMPANY)).thenReturn(company());
   }
 
   @Test
   void given_request_when_applying_then_returnsTheApplicationId()
   {
     when(service.apply(eq(OWNER), any())).thenReturn(application());
-    stubView();
+    stubSingleView();
 
     JobApplicationView view = resource.apply(CURRENT,
       new JobApplicationRequest(OFFER.toString(), LocalDate.of(2026, 1, 15), ResponseStatus.INTERVIEW, "note"));
@@ -84,7 +90,7 @@ class JobApplicationResourceTest
   void given_request_when_applying_then_embedsTheOfferTitle()
   {
     when(service.apply(eq(OWNER), any())).thenReturn(application());
-    stubView();
+    stubSingleView();
 
     JobApplicationView view = resource.apply(CURRENT,
       new JobApplicationRequest(OFFER.toString(), null, null, null));
@@ -97,7 +103,7 @@ class JobApplicationResourceTest
   {
     when(service.updateTracking(eq(OWNER), eq(JobApplicationId.of(ID)), any(), any(), any()))
       .thenReturn(application());
-    stubView();
+    stubSingleView();
 
     JobApplicationView view = resource.update(CURRENT, ID.toString(),
       new JobApplicationUpdateRequest(LocalDate.of(2026, 2, 1), ResponseStatus.ACCEPTED, "great"));
@@ -109,7 +115,7 @@ class JobApplicationResourceTest
   void given_id_when_gettingById_then_returnsTheApplication()
   {
     when(service.byId(OWNER, JobApplicationId.of(ID))).thenReturn(application());
-    stubView();
+    stubSingleView();
 
     assertThat(resource.get(CURRENT, ID.toString()).offer().company().name()).isEqualTo("ACME");
   }
@@ -118,7 +124,8 @@ class JobApplicationResourceTest
   void given_owner_when_listing_then_returnsAPage()
   {
     when(service.list(eq(OWNER), any())).thenReturn(new Page<>(List.of(application()), 0, 20, 1));
-    stubView();
+    when(offerService.byIds(any())).thenReturn(Map.of(OfferId.of(OFFER), offer()));
+    when(companyService.byIds(any())).thenReturn(Map.of(COMPANY, company()));
 
     PageView<JobApplicationView> page = resource.list(CURRENT, null, null);
 

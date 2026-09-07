@@ -1,7 +1,11 @@
 package com.petitcaillou.domain.company;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 
 public interface CompanyRepository
 {
@@ -11,9 +15,11 @@ public interface CompanyRepository
 
   Optional<Company> findByNormalizedName(NormalizedName normalizedName);
 
+  List<Company> findAllByIds(Collection<CompanyId> ids);
+
   boolean existsById(CompanyId id);
 
-  List<Company> findAll();
+  Page<Company> search(String normalizedPrefix, PageRequest pageRequest);
 
   void delete(CompanyId id);
 }

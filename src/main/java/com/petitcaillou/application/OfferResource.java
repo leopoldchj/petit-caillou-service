@@ -1,5 +1,6 @@
 package com.petitcaillou.application;
 
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -18,10 +19,12 @@ import com.petitcaillou.application.dto.OfferRequest;
 import com.petitcaillou.application.dto.OfferView;
 import com.petitcaillou.application.dto.PageView;
 import com.petitcaillou.domain.authentication.AuthenticatedUser;
+import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.offer.Offer;
 import com.petitcaillou.domain.offer.OfferDetails;
 import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.pagination.Page;
 import com.petitcaillou.service.CompanyService;
 import com.petitcaillou.service.OfferService;
 
@@ -43,13 +46,16 @@ public class OfferResource
     @RequestParam(name = "page", required = false) Integer page,
     @RequestParam(name = "size", required = false) Integer size)
   {
-    return PageView.from(offerService.list(current.username(), PageParams.of(page, size)), this::view);
+    Page<Offer> offers = offerService.list(current.username(), PageParams.of(page, size));
+    Map<CompanyId, Company> companies = companyService.byIds(offers.items().stream().map(Offer::companyId).toList());
+    return PageView.from(offers, offer -> OfferView.from(offer, companies.get(offer.companyId())));
   }
 
   @GetMapping("/{id}")
   public OfferView get(@CurrentUser AuthenticatedUser current, @PathVariable String id)
   {
-    return view(offerService.byId(current.username(), offerId(id)));
+    Offer offer = offerService.byId(current.username(), offerId(id));
+    return OfferView.from(offer, companyService.byId(offer.companyId()));
   }
 
   @PostMapping
@@ -63,11 +69,7 @@ public class OfferResource
       request.publicationDate(),
       request.link(),
       request.description());
-    return view(offerService.createPrivate(current.username(), details));
-  }
-
-  private OfferView view(Offer offer)
-  {
+    Offer offer = offerService.createPrivate(current.username(), details);
     return OfferView.from(offer, companyService.byId(offer.companyId()));
   }
 

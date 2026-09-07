@@ -9,6 +9,8 @@ public record ScannedOffer(
   String location,
   LocalDate publicationDate,
   String link,
-  String description)
+  String description,
+  String source,
+  String externalId)
 {
 }

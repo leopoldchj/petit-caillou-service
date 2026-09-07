@@ -2,6 +2,7 @@ package com.petitcaillou.application;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -59,9 +60,7 @@ class OfferResourceTest
     when(offerService.createPrivate(eq(USER), any())).thenReturn(offer());
     when(companyService.byId(COMPANY)).thenReturn(company());
 
-    OfferView view = resource.create(CURRENT, REQUEST);
-
-    assertThat(view.id()).isEqualTo(ID.toString());
+    assertThat(resource.create(CURRENT, REQUEST).id()).isEqualTo(ID.toString());
   }
 
   @Test
@@ -70,16 +69,14 @@ class OfferResourceTest
     when(offerService.byId(USER, OfferId.of(ID))).thenReturn(offer());
     when(companyService.byId(COMPANY)).thenReturn(company());
 
-    OfferView view = resource.get(CURRENT, ID.toString());
-
-    assertThat(view.company().name()).isEqualTo("ACME");
+    assertThat(resource.get(CURRENT, ID.toString()).company().name()).isEqualTo("ACME");
   }
 
   @Test
   void given_catalog_when_listing_then_returnsAPageOfOffers()
   {
     when(offerService.list(eq(USER), any())).thenReturn(new Page<>(List.of(offer()), 0, 20, 1));
-    when(companyService.byId(COMPANY)).thenReturn(company());
+    when(companyService.byIds(any())).thenReturn(Map.of(COMPANY, company()));
 
     PageView<OfferView> page = resource.list(CURRENT, null, null);
 
