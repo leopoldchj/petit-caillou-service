@@ -5,12 +5,6 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * An http(s) web address. It validates and canonicalizes on construction
- * (lowercased scheme and host, default ports and fragments dropped) so two
- * spellings of the same address compare equal, and answers questions about
- * itself rather than exposing a bare string.
- */
 public final class Url
 {
   private static final int MAX_LENGTH = 2048;
@@ -64,8 +58,9 @@ public final class Url
     String authority = host + portSuffix(scheme, uri.getPort());
     String path = uri.getRawPath() == null || uri.getRawPath().isEmpty() ? "/" : uri.getRawPath();
     String query = uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery();
+    String fragment = uri.getRawFragment() == null ? "" : "#" + uri.getRawFragment();
 
-    return new Url(scheme + "://" + authority + path + query, host, secure);
+    return new Url(scheme + "://" + authority + path + query + fragment, host, secure);
   }
 
   private static String portSuffix(String scheme, int port)

@@ -41,7 +41,11 @@ public final class JobApplication
 
   public JobApplication updateTracking(LocalDate applicationDate, ResponseStatus responseStatus, String notes)
   {
-    return new JobApplication(id, owner, new JobApplicationDetails(offerId, applicationDate, responseStatus, notes));
+    return new JobApplication(id, owner, new JobApplicationDetails(
+      offerId,
+      applicationDate != null ? applicationDate : this.applicationDate,
+      responseStatus != null ? responseStatus : this.responseStatus,
+      notes != null ? notes : this.notes));
   }
 
   public boolean isOwnedBy(Username username)

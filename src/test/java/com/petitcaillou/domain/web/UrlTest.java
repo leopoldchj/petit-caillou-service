@@ -1,12 +1,25 @@
 package com.petitcaillou.domain.web;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class UrlTest
 {
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "https://jobs.example/#/offers/42",
+    "https://jobs.example/?q=a%20b#/offers/a%2Fb",
+    "https://jobs.example/#"
+  })
+  void given_fragment_when_created_then_preservesTheLink(String link)
+  {
+    assertThat(Url.of(link).value()).isEqualTo(link);
+  }
+
   @Test
   void given_httpsUrl_when_created_then_isSecure()
   {

@@ -73,4 +73,24 @@ class JobApplicationTest
 
     assertThat(updated.offerId()).isEqualTo(OFFER);
   }
+
+  @Test
+  void given_nullDate_when_updatingTracking_then_keepsTheExistingDate()
+  {
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
+
+    JobApplication updated = application.updateTracking(null, ResponseStatus.ACCEPTED, null);
+
+    assertThat(updated.applicationDate()).isEqualTo(LocalDate.of(2026, 1, 15));
+  }
+
+  @Test
+  void given_nullNotes_when_updatingTracking_then_keepsTheExistingNotes()
+  {
+    JobApplication application = JobApplication.create(OWNER, details(ResponseStatus.NO_RESPONSE));
+
+    JobApplication updated = application.updateTracking(null, null, null);
+
+    assertThat(updated.notes()).isEqualTo("note");
+  }
 }

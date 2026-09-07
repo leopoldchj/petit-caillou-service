@@ -16,7 +16,8 @@ import com.petitcaillou.domain.user.Username;
 @Component
 public class JobApplicationRepositoryAdapter implements JobApplicationRepository
 {
-  private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "applicationDate");
+  private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "applicationDate")
+    .and(Sort.by("id"));
 
   private final SpringDataJobApplicationRepository jpa;
 
