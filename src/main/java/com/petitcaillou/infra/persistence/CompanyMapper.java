@@ -17,7 +17,7 @@ final class CompanyMapper
       company.id().value().toString(),
       company.name(),
       company.normalizedName().value(),
-      company.website());
+      company.website() == null ? null : company.website().value());
   }
 
   static Company toDomain(CompanyEntity entity)

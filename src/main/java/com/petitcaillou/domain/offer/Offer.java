@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.user.Username;
+import com.petitcaillou.domain.web.Url;
 
 public final class Offer
 {
@@ -14,7 +15,7 @@ public final class Offer
   private final String title;
   private final String location;
   private final LocalDate publicationDate;
-  private final String link;
+  private final Url link;
   private final String description;
   private final boolean verified;
   private final ContentHash dedupKey;
@@ -44,7 +45,7 @@ public final class Offer
     this.title = details.title();
     this.location = details.location();
     this.publicationDate = details.publicationDate();
-    this.link = details.link();
+    this.link = Url.ofNullable(details.link());
     this.description = details.description();
     this.verified = verified;
     this.dedupKey = dedupKey;
@@ -86,7 +87,7 @@ public final class Offer
       prefer(incoming.title(), title),
       prefer(incoming.location(), location),
       incoming.publicationDate() == null ? publicationDate : incoming.publicationDate(),
-      prefer(incoming.link(), link),
+      prefer(incoming.link(), link == null ? null : link.value()),
       prefer(incoming.description(), description));
     return new Offer(id, createdBy, merged, verified, dedupKey);
   }
@@ -109,7 +110,7 @@ public final class Offer
 
   public OfferDetails details()
   {
-    return new OfferDetails(companyId, title, location, publicationDate, link, description);
+    return new OfferDetails(companyId, title, location, publicationDate, link == null ? null : link.value(), description);
   }
 
   public boolean isPublic()
@@ -157,7 +158,7 @@ public final class Offer
     return publicationDate;
   }
 
-  public String link()
+  public Url link()
   {
     return link;
   }

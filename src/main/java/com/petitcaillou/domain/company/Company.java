@@ -1,18 +1,20 @@
 package com.petitcaillou.domain.company;
 
+import com.petitcaillou.domain.web.Url;
+
 public final class Company
 {
   private final CompanyId id;
   private final String name;
   private final NormalizedName normalizedName;
-  private final String website;
+  private final Url website;
 
   private Company(CompanyId id, String name, String website)
   {
     this.id = id;
     this.name = requireName(name);
     this.normalizedName = NormalizedName.of(this.name);
-    this.website = website;
+    this.website = Url.ofNullable(website);
   }
 
   public static Company create(String name, String website)
@@ -49,7 +51,7 @@ public final class Company
     return normalizedName;
   }
 
-  public String website()
+  public Url website()
   {
     return website;
   }

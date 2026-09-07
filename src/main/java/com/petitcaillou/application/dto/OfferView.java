@@ -24,7 +24,7 @@ public record OfferView(
       offer.title(),
       offer.location(),
       offer.publicationDate(),
-      offer.link(),
+      offer.link() == null ? null : offer.link().value(),
       offer.description(),
       offer.verified(),
       offer.visibility().name());

@@ -23,7 +23,7 @@ final class OfferMapper
       offer.title(),
       offer.location(),
       offer.publicationDate(),
-      offer.link(),
+      offer.link() == null ? null : offer.link().value(),
       offer.description(),
       offer.createdBy().value(),
       offer.verified(),
