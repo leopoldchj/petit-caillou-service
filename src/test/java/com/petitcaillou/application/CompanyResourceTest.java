@@ -38,6 +38,14 @@ class CompanyResourceTest
   }
 
   @Test
+  void given_id_when_gettingById_then_returnsTheCompany()
+  {
+    when(companyService.byId(ID)).thenReturn(Company.reconstitute(ID, "ACME", null));
+
+    assertThat(resource.get(ID.value().toString()).name()).isEqualTo("ACME");
+  }
+
+  @Test
   void given_request_when_creating_then_returnsTheCreatedCompany()
   {
     when(companyService.create("ACME", null)).thenReturn(Company.reconstitute(ID, "ACME", null));

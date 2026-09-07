@@ -42,6 +42,12 @@ public class CompanyResource
     return PageView.from(companyService.search(query, PageParams.of(page, size)), CompanyView::from);
   }
 
+  @GetMapping("/{id}")
+  public CompanyView get(@PathVariable String id)
+  {
+    return CompanyView.from(companyService.byId(companyId(id)));
+  }
+
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public CompanyView create(@Valid @RequestBody CompanyRequest request)
