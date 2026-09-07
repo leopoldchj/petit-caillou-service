@@ -1,13 +1,19 @@
 package com.petitcaillou.domain.company;
 
-import java.text.Normalizer;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
+import java.util.stream.Stream;
+
+import com.petitcaillou.domain.text.TextNormalizer;
 
 public final class NormalizedName
 {
   private static final List<String> LEGAL_SUFFIXES =
-    List.of("sas", "sasu", "sarl", "sa", "eurl", "inc", "llc", "ltd", "ltda", "plc", "gmbh", "ag", "bv", "co", "corp");
+    Stream.of("sas", "sasu", "sarl", "sa", "eurl", "inc", "llc", "ltd", "ltda", "plc", "gmbh", "ag", "bv", "co", "corp")
+      .flatMap(suffix -> suffix.length() >= 3 ? Stream.of(suffix, spaced(suffix)) : Stream.of(suffix))
+      .distinct()
+      .sorted(Comparator.comparingInt(String::length).reversed())
+      .toList();
 
   private final String value;
 
@@ -21,35 +27,44 @@ public final class NormalizedName
     String canonical = canonical(rawName);
     if (canonical.isEmpty())
     {
-      throw new IllegalArgumentException("Company name does not normalize to anything meaningful");
+      throw new IllegalArgumentException("Company name must contain at least one letter or digit");
     }
     return new NormalizedName(canonical);
   }
 
   public static String canonical(String rawName)
   {
-    String base = text(rawName);
-    if (base.isEmpty())
+    String result = TextNormalizer.fold(rawName);
+
+    while (!result.isEmpty())
     {
-      return base;
+      String shortened = removeTrailingSuffix(result);
+      if (shortened.equals(result))
+      {
+        return result;
+      }
+      result = shortened;
     }
 
-    List<String> tokens = new java.util.ArrayList<>(List.of(base.split(" ")));
-    while (tokens.size() > 1 && LEGAL_SUFFIXES.contains(tokens.get(tokens.size() - 1)))
-    {
-      tokens.remove(tokens.size() - 1);
-    }
-    return String.join(" ", tokens);
+    return result;
   }
 
-  public static String text(String raw)
+  private static String removeTrailingSuffix(String name)
   {
-    if (raw == null)
+    for (String suffix : LEGAL_SUFFIXES)
     {
-      return "";
+      String ending = " " + suffix;
+      if (name.endsWith(ending))
+      {
+        return name.substring(0, name.length() - ending.length());
+      }
     }
-    String withoutAccents = Normalizer.normalize(raw, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-    return withoutAccents.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
+    return name;
+  }
+
+  private static String spaced(String value)
+  {
+    return String.join(" ", value.split(""));
   }
 
   public String value()
@@ -60,15 +75,8 @@ public final class NormalizedName
   @Override
   public boolean equals(Object other)
   {
-    if (this == other)
-    {
-      return true;
-    }
-    if (!(other instanceof NormalizedName name))
-    {
-      return false;
-    }
-    return value.equals(name.value);
+    return this == other
+      || other instanceof NormalizedName name && value.equals(name.value);
   }
 
   @Override

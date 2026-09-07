@@ -64,6 +64,11 @@ public final class Offer
     return SystemAccount.USERNAME.equals(createdBy);
   }
 
+  public OfferVisibility visibility()
+  {
+    return isPublic() ? OfferVisibility.PUBLIC : OfferVisibility.PRIVATE;
+  }
+
   public boolean isVisibleTo(Username user)
   {
     return isPublic() || createdBy.equals(user);

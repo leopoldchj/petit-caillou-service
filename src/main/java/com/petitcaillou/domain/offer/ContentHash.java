@@ -7,10 +7,12 @@ import java.time.LocalDate;
 import java.util.HexFormat;
 
 import com.petitcaillou.domain.company.CompanyId;
-import com.petitcaillou.domain.company.NormalizedName;
+import com.petitcaillou.domain.text.TextNormalizer;
 
 public final class ContentHash
 {
+  private static final String HASH_ALGORITHM = "SHA-256";
+
   private final String value;
 
   private ContentHash(String value)
@@ -23,8 +25,8 @@ public final class ContentHash
     String seed = String.join(
       "|",
       companyId.value().toString(),
-      NormalizedName.text(title),
-      NormalizedName.text(location),
+      TextNormalizer.fold(title),
+      TextNormalizer.fold(location),
       publicationDate == null ? "" : publicationDate.toString());
     return new ContentHash(sha256(seed));
   }
@@ -38,12 +40,12 @@ public final class ContentHash
   {
     try
     {
-      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      MessageDigest digest = MessageDigest.getInstance(HASH_ALGORITHM);
       return HexFormat.of().formatHex(digest.digest(seed.getBytes(StandardCharsets.UTF_8)));
     }
     catch (NoSuchAlgorithmException exception)
     {
-      throw new IllegalStateException("SHA-256 is required but unavailable", exception);
+      throw new IllegalStateException(HASH_ALGORITHM + " is required but unavailable", exception);
     }
   }
 
