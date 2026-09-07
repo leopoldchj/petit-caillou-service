@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 interface SpringDataCompanyRepository extends JpaRepository<CompanyEntity, String>
 {
-  Optional<CompanyEntity> findByName(String name);
+  Optional<CompanyEntity> findByNormalizedName(String normalizedName);
 }

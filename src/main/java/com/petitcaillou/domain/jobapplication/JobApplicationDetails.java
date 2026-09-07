@@ -2,15 +2,12 @@ package com.petitcaillou.domain.jobapplication;
 
 import java.time.LocalDate;
 
-import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.offer.OfferId;
 
 public record JobApplicationDetails(
-  String link,
-  CompanyId companyId,
-  String title,
-  String description,
-  String location,
+  OfferId offerId,
   LocalDate applicationDate,
-  ResponseStatus responseStatus)
+  ResponseStatus responseStatus,
+  String notes)
 {
 }

@@ -9,7 +9,7 @@ public interface CompanyRepository
 
   Optional<Company> findById(CompanyId id);
 
-  Optional<Company> findByName(String name);
+  Optional<Company> findByNormalizedName(NormalizedName normalizedName);
 
   boolean existsById(CompanyId id);
 

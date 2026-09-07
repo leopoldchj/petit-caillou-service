@@ -4,23 +4,25 @@ public final class Company
 {
   private final CompanyId id;
   private final String name;
+  private final NormalizedName normalizedName;
   private final String website;
 
   private Company(CompanyId id, String name, String website)
   {
     this.id = id;
-    this.name = name;
+    this.name = requireName(name);
+    this.normalizedName = NormalizedName.of(this.name);
     this.website = website;
   }
 
   public static Company create(String name, String website)
   {
-    return new Company(CompanyId.newId(), requireName(name), website);
+    return new Company(CompanyId.newId(), name, website);
   }
 
   public static Company reconstitute(CompanyId id, String name, String website)
   {
-    return new Company(id, requireName(name), website);
+    return new Company(id, name, website);
   }
 
   private static String requireName(String name)
@@ -40,6 +42,11 @@ public final class Company
   public String name()
   {
     return name;
+  }
+
+  public NormalizedName normalizedName()
+  {
+    return normalizedName;
   }
 
   public String website()

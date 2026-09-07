@@ -1,19 +1,23 @@
 package com.petitcaillou.infra.persistence;
 
-import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
-import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.jobapplication.JobApplication;
 import com.petitcaillou.domain.jobapplication.JobApplicationId;
 import com.petitcaillou.domain.jobapplication.JobApplicationRepository;
+import com.petitcaillou.domain.offer.OfferId;
+import com.petitcaillou.domain.pagination.Page;
+import com.petitcaillou.domain.pagination.PageRequest;
 import com.petitcaillou.domain.user.Username;
 
 @Component
 public class JobApplicationRepositoryAdapter implements JobApplicationRepository
 {
+  private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "applicationDate");
+
   private final SpringDataJobApplicationRepository jpa;
 
   public JobApplicationRepositoryAdapter(SpringDataJobApplicationRepository jpa)
@@ -24,8 +28,7 @@ public class JobApplicationRepositoryAdapter implements JobApplicationRepository
   @Override
   public JobApplication save(JobApplication application)
   {
-    JobApplicationEntity saved = jpa.save(JobApplicationMapper.toEntity(application));
-    return JobApplicationMapper.toDomain(saved);
+    return JobApplicationMapper.toDomain(jpa.save(JobApplicationMapper.toEntity(application)));
   }
 
   @Override
@@ -35,22 +38,17 @@ public class JobApplicationRepositoryAdapter implements JobApplicationRepository
   }
 
   @Override
-  public List<JobApplication> findByOwner(Username owner)
+  public Page<JobApplication> findByOwner(Username owner, PageRequest pageRequest)
   {
-    return jpa.findByOwnerUsername(owner.value()).stream().map(JobApplicationMapper::toDomain).toList();
+    org.springframework.data.domain.Page<JobApplicationEntity> page =
+      jpa.findByOwnerUsername(owner.value(), PageMapper.toPageable(pageRequest, NEWEST_FIRST));
+    return PageMapper.toDomain(page, pageRequest, JobApplicationMapper::toDomain);
   }
 
   @Override
-  public List<JobApplication> findByOwnerAndCompany(Username owner, CompanyId companyId)
+  public boolean existsByOwnerAndOffer(Username owner, OfferId offerId)
   {
-    return jpa.findByOwnerUsernameAndCompanyId(owner.value(), companyId.value().toString())
-      .stream().map(JobApplicationMapper::toDomain).toList();
-  }
-
-  @Override
-  public boolean existsByCompany(CompanyId companyId)
-  {
-    return jpa.existsByCompanyId(companyId.value().toString());
+    return jpa.existsByOwnerUsernameAndOfferId(owner.value(), offerId.value().toString());
   }
 
   @Override

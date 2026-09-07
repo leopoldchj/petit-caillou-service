@@ -5,27 +5,35 @@ import java.util.List;
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.company.CompanyRepository;
+import com.petitcaillou.domain.company.NormalizedName;
 import com.petitcaillou.domain.company.exceptions.CompanyInUseException;
 import com.petitcaillou.domain.company.exceptions.CompanyNameAlreadyUsedException;
 import com.petitcaillou.domain.company.exceptions.CompanyNotFoundException;
-import com.petitcaillou.domain.jobapplication.JobApplicationRepository;
+import com.petitcaillou.domain.offer.OfferRepository;
 
 public class CompanyService
 {
   private final CompanyRepository companies;
-  private final JobApplicationRepository applications;
+  private final OfferRepository offers;
 
-  public CompanyService(CompanyRepository companies, JobApplicationRepository applications)
+  public CompanyService(CompanyRepository companies, OfferRepository offers)
   {
     this.companies = companies;
-    this.applications = applications;
+    this.offers = offers;
   }
 
   public Company create(String name, String website)
   {
     Company company = Company.create(name, website);
-    requireUniqueName(company.name(), null);
+    requireUniqueName(company.normalizedName(), null);
     return companies.save(company);
+  }
+
+  public Company resolveOrCreate(String name, String website)
+  {
+    Company candidate = Company.create(name, website);
+    return companies.findByNormalizedName(candidate.normalizedName())
+      .orElseGet(() -> companies.save(candidate));
   }
 
   public Company update(CompanyId id, String name, String website)
@@ -33,7 +41,7 @@ public class CompanyService
     byId(id);
 
     Company updated = Company.reconstitute(id, name, website);
-    requireUniqueName(updated.name(), id);
+    requireUniqueName(updated.normalizedName(), id);
     return companies.save(updated);
   }
 
@@ -41,7 +49,7 @@ public class CompanyService
   {
     byId(id);
 
-    if (applications.existsByCompany(id))
+    if (offers.existsByCompany(id))
     {
       throw new CompanyInUseException();
     }
@@ -60,9 +68,9 @@ public class CompanyService
     return companies.findAll();
   }
 
-  private void requireUniqueName(String name, CompanyId allowedId)
+  private void requireUniqueName(NormalizedName normalizedName, CompanyId allowedId)
   {
-    companies.findByName(name).ifPresent(existing ->
+    companies.findByNormalizedName(normalizedName).ifPresent(existing ->
     {
       if (!existing.id().equals(allowedId))
       {

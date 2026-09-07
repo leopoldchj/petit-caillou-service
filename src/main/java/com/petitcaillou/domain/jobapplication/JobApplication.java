@@ -2,41 +2,31 @@ package com.petitcaillou.domain.jobapplication;
 
 import java.time.LocalDate;
 
-import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.offer.OfferId;
 import com.petitcaillou.domain.user.Username;
 
 public final class JobApplication
 {
   private final JobApplicationId id;
   private final Username owner;
-  private final CompanyId companyId;
-  private final String link;
-  private final String title;
-  private final String description;
-  private final String location;
+  private final OfferId offerId;
   private final LocalDate applicationDate;
   private final ResponseStatus responseStatus;
+  private final String notes;
 
   private JobApplication(JobApplicationId id, Username owner, JobApplicationDetails details)
   {
-    if (details.companyId() == null)
+    if (details.offerId() == null)
     {
-      throw new IllegalArgumentException("Company is required");
-    }
-    if (details.title() == null || details.title().isBlank())
-    {
-      throw new IllegalArgumentException("Title is required");
+      throw new IllegalArgumentException("Offer is required");
     }
 
     this.id = id;
     this.owner = owner;
-    this.companyId = details.companyId();
-    this.link = details.link();
-    this.title = details.title();
-    this.description = details.description();
-    this.location = details.location();
+    this.offerId = details.offerId();
     this.applicationDate = details.applicationDate();
     this.responseStatus = details.responseStatus() == null ? ResponseStatus.NO_RESPONSE : details.responseStatus();
+    this.notes = details.notes();
   }
 
   public static JobApplication create(Username owner, JobApplicationDetails details)
@@ -49,9 +39,9 @@ public final class JobApplication
     return new JobApplication(id, owner, details);
   }
 
-  public JobApplication update(JobApplicationDetails details)
+  public JobApplication updateTracking(LocalDate applicationDate, ResponseStatus responseStatus, String notes)
   {
-    return new JobApplication(id, owner, details);
+    return new JobApplication(id, owner, new JobApplicationDetails(offerId, applicationDate, responseStatus, notes));
   }
 
   public boolean isOwnedBy(Username username)
@@ -69,29 +59,9 @@ public final class JobApplication
     return owner;
   }
 
-  public CompanyId companyId()
+  public OfferId offerId()
   {
-    return companyId;
-  }
-
-  public String link()
-  {
-    return link;
-  }
-
-  public String title()
-  {
-    return title;
-  }
-
-  public String description()
-  {
-    return description;
-  }
-
-  public String location()
-  {
-    return location;
+    return offerId;
   }
 
   public LocalDate applicationDate()
@@ -102,5 +72,10 @@ public final class JobApplication
   public ResponseStatus responseStatus()
   {
     return responseStatus;
+  }
+
+  public String notes()
+  {
+    return notes;
   }
 }

@@ -21,8 +21,8 @@ import org.testcontainers.mariadb.MariaDBContainer;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,140 +81,191 @@ class JobApplicationIntegrationTest
     return extractId(body);
   }
 
-  private String applicationJson(String companyId)
+  private String createOffer(String token, String companyId, String title) throws Exception
   {
-    return "{\"companyId\":\"%s\",\"title\":\"Backend engineer\",\"responseStatus\":\"INTERVIEW\"}".formatted(companyId);
+    String body = mockMvc.perform(post("/offers")
+        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"companyId\":\"%s\",\"title\":\"%s\",\"publicationDate\":\"2026-01-15\"}".formatted(companyId, title)))
+      .andReturn().getResponse().getContentAsString();
+    return extractId(body);
   }
 
-  private String createApplication(String token, String companyId) throws Exception
+  private String apply(String token, String offerId) throws Exception
   {
     String body = mockMvc.perform(post("/applications")
         .header(HttpHeaders.AUTHORIZATION, bearer(token))
         .contentType(MediaType.APPLICATION_JSON)
-        .content(applicationJson(companyId)))
+        .content("{\"offerId\":\"%s\",\"responseStatus\":\"INTERVIEW\"}".formatted(offerId)))
       .andReturn().getResponse().getContentAsString();
     return extractId(body);
   }
 
   @Test
-  void given_authenticatedUser_when_creatingCompany_then_respondsCreated() throws Exception
+  void given_authenticatedUser_when_creatingOffer_then_respondsCreated() throws Exception
   {
-    String token = registerAndGetToken("company_creator", "company_creator@ex.com");
+    String token = registerAndGetToken("offer_creator", "offer_creator@ex.com");
+    String companyId = createCompany(token, "Offer Creator Co");
 
-    mockMvc.perform(post("/companies")
+    mockMvc.perform(post("/offers")
         .header(HttpHeaders.AUTHORIZATION, bearer(token))
         .contentType(MediaType.APPLICATION_JSON)
-        .content("{\"name\":\"Company Creator Co\"}"))
+        .content("{\"companyId\":\"%s\",\"title\":\"Backend\",\"publicationDate\":\"2026-01-15\"}".formatted(companyId)))
       .andExpect(status().isCreated());
   }
 
   @Test
-  void given_authenticatedUser_when_listingCompanies_then_respondsOk() throws Exception
+  void given_offerMissingPublicationDate_when_creating_then_respondsBadRequest() throws Exception
   {
-    String token = registerAndGetToken("company_lister", "company_lister@ex.com");
+    String token = registerAndGetToken("offer_no_date", "offer_no_date@ex.com");
+    String companyId = createCompany(token, "No Date Co");
 
-    mockMvc.perform(get("/companies").header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(status().isOk());
-  }
-
-  @Test
-  void given_existingName_when_creatingCompany_then_respondsConflictWithExistingId() throws Exception
-  {
-    String token = registerAndGetToken("dup_company", "dup_company@ex.com");
-    createCompany(token, "Duplicate Co");
-
-    mockMvc.perform(post("/companies")
+    mockMvc.perform(post("/offers")
         .header(HttpHeaders.AUTHORIZATION, bearer(token))
         .contentType(MediaType.APPLICATION_JSON)
-        .content("{\"name\":\"Duplicate Co\"}"))
-      .andExpect(jsonPath("$.existingCompanyId").isNotEmpty());
+        .content("{\"companyId\":\"%s\",\"title\":\"Backend\"}".formatted(companyId)))
+      .andExpect(status().isBadRequest());
   }
 
   @Test
-  void given_authenticatedUser_when_updatingCompany_then_respondsOk() throws Exception
+  void given_ownOffers_when_listing_then_returnsThemPaginated() throws Exception
   {
-    String token = registerAndGetToken("company_editor", "company_editor@ex.com");
-    String companyId = createCompany(token, "Editor Co");
+    String token = registerAndGetToken("offer_lister", "offer_lister@ex.com");
+    String companyId = createCompany(token, "Offer Lister Co");
+    createOffer(token, companyId, "Backend");
+    createOffer(token, companyId, "Frontend");
 
-    mockMvc.perform(put("/companies/" + companyId)
-        .header(HttpHeaders.AUTHORIZATION, bearer(token))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content("{\"name\":\"Renamed Co\"}"))
-      .andExpect(status().isOk());
+    mockMvc.perform(get("/offers").param("size", "1").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(jsonPath("$.items.length()").value(1))
+      .andExpect(jsonPath("$.totalElements").value(2));
   }
 
   @Test
-  void given_unusedCompany_when_deleting_then_respondsNoContent() throws Exception
+  void given_privateOffer_when_anotherUserGetsIt_then_respondsNotFound() throws Exception
   {
-    String token = registerAndGetToken("company_remover", "company_remover@ex.com");
-    String companyId = createCompany(token, "Remover Co Global");
+    String ownerToken = registerAndGetToken("offer_owner", "offer_owner@ex.com");
+    String companyId = createCompany(ownerToken, "Offer Owner Co");
+    String offerId = createOffer(ownerToken, companyId, "Backend");
+    String intruderToken = registerAndGetToken("offer_intruder", "offer_intruder@ex.com");
 
-    mockMvc.perform(delete("/companies/" + companyId)
-        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(status().isNoContent());
-  }
-
-  @Test
-  void given_companyInUse_when_deleting_then_respondsConflict() throws Exception
-  {
-    String token = registerAndGetToken("company_locked", "company_locked@ex.com");
-    String companyId = createCompany(token, "Locked Co");
-    createApplication(token, companyId);
-
-    mockMvc.perform(delete("/companies/" + companyId)
-        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(status().isConflict());
-  }
-
-  @Test
-  void given_knownCompany_when_creatingApplication_then_respondsCreated() throws Exception
-  {
-    String token = registerAndGetToken("creator", "creator@ex.com");
-    String companyId = createCompany(token, "Creator Co");
-
-    mockMvc.perform(post("/applications")
-        .header(HttpHeaders.AUTHORIZATION, bearer(token))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(applicationJson(companyId)))
-      .andExpect(status().isCreated());
-  }
-
-  @Test
-  void given_unknownCompany_when_creatingApplication_then_respondsNotFound() throws Exception
-  {
-    String token = registerAndGetToken("no_company", "no_company@ex.com");
-
-    mockMvc.perform(post("/applications")
-        .header(HttpHeaders.AUTHORIZATION, bearer(token))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(applicationJson(UUID.randomUUID().toString())))
+    mockMvc.perform(get("/offers/" + offerId).header(HttpHeaders.AUTHORIZATION, bearer(intruderToken)))
       .andExpect(status().isNotFound());
   }
 
   @Test
-  void given_missingTitle_when_creatingApplication_then_respondsBadRequest() throws Exception
+  void given_companyWithOffers_when_deleting_then_respondsConflict() throws Exception
   {
-    String token = registerAndGetToken("no_title", "no_title@ex.com");
-    String companyId = createCompany(token, "No Title Co");
+    String token = registerAndGetToken("company_locked", "company_locked@ex.com");
+    String companyId = createCompany(token, "Locked Co");
+    createOffer(token, companyId, "Backend");
+
+    mockMvc.perform(delete("/companies/" + companyId).header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(status().isConflict());
+  }
+
+  @Test
+  void given_visibleOffer_when_applying_then_respondsCreated() throws Exception
+  {
+    String token = registerAndGetToken("applier", "applier@ex.com");
+    String companyId = createCompany(token, "Applier Co");
+    String offerId = createOffer(token, companyId, "Backend");
 
     mockMvc.perform(post("/applications")
         .header(HttpHeaders.AUTHORIZATION, bearer(token))
         .contentType(MediaType.APPLICATION_JSON)
-        .content("{\"companyId\":\"%s\"}".formatted(companyId)))
-      .andExpect(status().isBadRequest());
+        .content("{\"offerId\":\"%s\"}".formatted(offerId)))
+      .andExpect(status().isCreated());
   }
 
   @Test
-  void given_malformedId_when_updatingApplication_then_respondsBadRequest() throws Exception
+  void given_unknownOffer_when_applying_then_respondsNotFound() throws Exception
   {
-    String token = registerAndGetToken("bad_id", "bad_id@ex.com");
-    String companyId = createCompany(token, "Bad Id Co");
+    String token = registerAndGetToken("no_offer", "no_offer@ex.com");
 
-    mockMvc.perform(put("/applications/not-a-uuid")
+    mockMvc.perform(post("/applications")
         .header(HttpHeaders.AUTHORIZATION, bearer(token))
         .contentType(MediaType.APPLICATION_JSON)
-        .content(applicationJson(companyId)))
-      .andExpect(status().isBadRequest());
+        .content("{\"offerId\":\"%s\"}".formatted(UUID.randomUUID())))
+      .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void given_alreadyApplied_when_applyingAgain_then_respondsConflict() throws Exception
+  {
+    String token = registerAndGetToken("dup_applier", "dup_applier@ex.com");
+    String companyId = createCompany(token, "Dup Applier Co");
+    String offerId = createOffer(token, companyId, "Backend");
+    apply(token, offerId);
+
+    mockMvc.perform(post("/applications")
+        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"offerId\":\"%s\"}".formatted(offerId)))
+      .andExpect(status().isConflict());
+  }
+
+  @Test
+  void given_ownApplications_when_listing_then_returnsThemPaginated() throws Exception
+  {
+    String token = registerAndGetToken("app_lister", "app_lister@ex.com");
+    String companyId = createCompany(token, "App Lister Co");
+    String offerId = createOffer(token, companyId, "Backend");
+    apply(token, offerId);
+
+    mockMvc.perform(get("/applications").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(jsonPath("$.items.length()").value(1));
+  }
+
+  @Test
+  void given_ownApplication_when_gettingById_then_returnsItWithOfferCompany() throws Exception
+  {
+    String token = registerAndGetToken("app_getter", "app_getter@ex.com");
+    String companyId = createCompany(token, "App Getter Co");
+    String offerId = createOffer(token, companyId, "Backend");
+    String id = apply(token, offerId);
+
+    mockMvc.perform(get("/applications/" + id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(jsonPath("$.offer.company.name").value("App Getter Co"));
+  }
+
+  @Test
+  void given_ownApplication_when_updatingStatus_then_respondsOk() throws Exception
+  {
+    String token = registerAndGetToken("app_updater", "app_updater@ex.com");
+    String companyId = createCompany(token, "App Updater Co");
+    String offerId = createOffer(token, companyId, "Backend");
+    String id = apply(token, offerId);
+
+    mockMvc.perform(patch("/applications/" + id)
+        .header(HttpHeaders.AUTHORIZATION, bearer(token))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"responseStatus\":\"ACCEPTED\"}"))
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  void given_ownApplication_when_deleting_then_respondsNoContent() throws Exception
+  {
+    String token = registerAndGetToken("app_remover", "app_remover@ex.com");
+    String companyId = createCompany(token, "App Remover Co");
+    String offerId = createOffer(token, companyId, "Backend");
+    String id = apply(token, offerId);
+
+    mockMvc.perform(delete("/applications/" + id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
+      .andExpect(status().isNoContent());
+  }
+
+  @Test
+  void given_applicationOfAnotherUser_when_gettingById_then_respondsNotFound() throws Exception
+  {
+    String ownerToken = registerAndGetToken("app_owner", "app_owner@ex.com");
+    String companyId = createCompany(ownerToken, "App Owner Co");
+    String offerId = createOffer(ownerToken, companyId, "Backend");
+    String id = apply(ownerToken, offerId);
+    String intruderToken = registerAndGetToken("app_intruder", "app_intruder@ex.com");
+
+    mockMvc.perform(get("/applications/" + id).header(HttpHeaders.AUTHORIZATION, bearer(intruderToken)))
+      .andExpect(status().isNotFound());
   }
 
   @Test
@@ -225,119 +276,15 @@ class JobApplicationIntegrationTest
   }
 
   @Test
-  void given_ownApplications_when_listing_then_returnsThem() throws Exception
+  void given_duplicateCompanyName_when_creating_then_respondsConflictWithExistingId() throws Exception
   {
-    String token = registerAndGetToken("lister", "lister@ex.com");
-    String companyId = createCompany(token, "Lister Co");
-    createApplication(token, companyId);
+    String token = registerAndGetToken("dup_company", "dup_company@ex.com");
+    createCompany(token, "Duplicate Co");
 
-    mockMvc.perform(get("/applications").header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(jsonPath("$.length()").value(1));
-  }
-
-  @Test
-  void given_companyFilter_when_listing_then_returnsOnlyMatchingApplications() throws Exception
-  {
-    String token = registerAndGetToken("filterer", "filterer@ex.com");
-    String companyA = createCompany(token, "Filter A Co");
-    String companyB = createCompany(token, "Filter B Co");
-    createApplication(token, companyA);
-    createApplication(token, companyB);
-
-    mockMvc.perform(get("/applications")
-        .param("companyId", companyA)
-        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(jsonPath("$.length()").value(1));
-  }
-
-  @Test
-  void given_ownApplication_when_gettingById_then_returnsItWithCompanyName() throws Exception
-  {
-    String token = registerAndGetToken("getter", "getter@ex.com");
-    String companyId = createCompany(token, "Getter Co");
-    String id = createApplication(token, companyId);
-
-    mockMvc.perform(get("/applications/" + id).header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(jsonPath("$.company.name").value("Getter Co"));
-  }
-
-  @Test
-  void given_applicationOfAnotherUser_when_gettingById_then_respondsNotFound() throws Exception
-  {
-    String ownerToken = registerAndGetToken("owner_get", "owner_get@ex.com");
-    String companyId = createCompany(ownerToken, "Owner Get Co");
-    String id = createApplication(ownerToken, companyId);
-    String intruderToken = registerAndGetToken("intruder_get", "intruder_get@ex.com");
-
-    mockMvc.perform(get("/applications/" + id).header(HttpHeaders.AUTHORIZATION, bearer(intruderToken)))
-      .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void given_ownApplication_when_updating_then_respondsOk() throws Exception
-  {
-    String token = registerAndGetToken("updater", "updater@ex.com");
-    String companyId = createCompany(token, "Updater Co");
-    String id = createApplication(token, companyId);
-
-    mockMvc.perform(put("/applications/" + id)
+    mockMvc.perform(post("/companies")
         .header(HttpHeaders.AUTHORIZATION, bearer(token))
         .contentType(MediaType.APPLICATION_JSON)
-        .content("{\"companyId\":\"%s\",\"title\":\"Lead engineer\",\"responseStatus\":\"ACCEPTED\"}".formatted(companyId)))
-      .andExpect(status().isOk());
-  }
-
-  @Test
-  void given_unknownCompany_when_updating_then_respondsNotFound() throws Exception
-  {
-    String token = registerAndGetToken("update_no_company", "update_no_company@ex.com");
-    String companyId = createCompany(token, "Update No Company Co");
-    String id = createApplication(token, companyId);
-
-    mockMvc.perform(put("/applications/" + id)
-        .header(HttpHeaders.AUTHORIZATION, bearer(token))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(applicationJson(UUID.randomUUID().toString())))
-      .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void given_ownApplication_when_deleting_then_respondsNoContent() throws Exception
-  {
-    String token = registerAndGetToken("remover", "remover@ex.com");
-    String companyId = createCompany(token, "Remover Co");
-    String id = createApplication(token, companyId);
-
-    mockMvc.perform(delete("/applications/" + id)
-        .header(HttpHeaders.AUTHORIZATION, bearer(token)))
-      .andExpect(status().isNoContent());
-  }
-
-  @Test
-  void given_applicationOfAnotherUser_when_updating_then_respondsNotFound() throws Exception
-  {
-    String ownerToken = registerAndGetToken("owner_a", "owner_a@ex.com");
-    String companyId = createCompany(ownerToken, "Owner A Co");
-    String id = createApplication(ownerToken, companyId);
-    String intruderToken = registerAndGetToken("intruder_a", "intruder_a@ex.com");
-
-    mockMvc.perform(put("/applications/" + id)
-        .header(HttpHeaders.AUTHORIZATION, bearer(intruderToken))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(applicationJson(companyId)))
-      .andExpect(status().isNotFound());
-  }
-
-  @Test
-  void given_applicationOfAnotherUser_when_deleting_then_respondsNotFound() throws Exception
-  {
-    String ownerToken = registerAndGetToken("owner_b", "owner_b@ex.com");
-    String companyId = createCompany(ownerToken, "Owner B Co");
-    String id = createApplication(ownerToken, companyId);
-    String intruderToken = registerAndGetToken("intruder_b", "intruder_b@ex.com");
-
-    mockMvc.perform(delete("/applications/" + id)
-        .header(HttpHeaders.AUTHORIZATION, bearer(intruderToken)))
-      .andExpect(status().isNotFound());
+        .content("{\"name\":\"duplicate co\"}"))
+      .andExpect(jsonPath("$.existingCompanyId").isNotEmpty());
   }
 }

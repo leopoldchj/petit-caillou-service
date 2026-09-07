@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
+import com.petitcaillou.domain.company.NormalizedName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +25,7 @@ class CompanyRepositoryAdapterTest
 
   private CompanyEntity storedEntity()
   {
-    return new CompanyEntity(ID.toString(), "ACME", "https://acme.example.com");
+    return new CompanyEntity(ID.toString(), "ACME", "acme", "https://acme.example.com");
   }
 
   @Test
@@ -48,11 +49,11 @@ class CompanyRepositoryAdapterTest
   }
 
   @Test
-  void given_storedEntity_when_findingByName_then_returnsMappedCompany()
+  void given_storedEntity_when_findingByNormalizedName_then_returnsMappedCompany()
   {
-    when(jpa.findByName("ACME")).thenReturn(Optional.of(storedEntity()));
+    when(jpa.findByNormalizedName("acme")).thenReturn(Optional.of(storedEntity()));
 
-    Optional<Company> found = adapter.findByName("ACME");
+    Optional<Company> found = adapter.findByNormalizedName(NormalizedName.of("ACME"));
 
     assertThat(found.orElseThrow().id().value()).isEqualTo(ID);
   }

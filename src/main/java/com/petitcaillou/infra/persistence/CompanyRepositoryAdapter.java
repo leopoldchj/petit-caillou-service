@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.company.CompanyRepository;
+import com.petitcaillou.domain.company.NormalizedName;
 
 @Component
 public class CompanyRepositoryAdapter implements CompanyRepository
@@ -32,9 +33,9 @@ public class CompanyRepositoryAdapter implements CompanyRepository
   }
 
   @Override
-  public Optional<Company> findByName(String name)
+  public Optional<Company> findByNormalizedName(NormalizedName normalizedName)
   {
-    return jpa.findByName(name).map(CompanyMapper::toDomain);
+    return jpa.findByNormalizedName(normalizedName.value()).map(CompanyMapper::toDomain);
   }
 
   @Override

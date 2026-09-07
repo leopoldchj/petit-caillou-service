@@ -13,8 +13,11 @@ public class CompanyEntity
   @Column(name = "id", nullable = false, updatable = false, length = 36)
   private String id;
 
-  @Column(name = "name", nullable = false, unique = true, length = 255)
+  @Column(name = "name", nullable = false, length = 255)
   private String name;
+
+  @Column(name = "normalized_name", nullable = false, unique = true, length = 255)
+  private String normalizedName;
 
   @Column(name = "website", length = 2048)
   private String website;
@@ -23,10 +26,11 @@ public class CompanyEntity
   {
   }
 
-  public CompanyEntity(String id, String name, String website)
+  public CompanyEntity(String id, String name, String normalizedName, String website)
   {
     this.id = id;
     this.name = name;
+    this.normalizedName = normalizedName;
     this.website = website;
   }
 
@@ -38,6 +42,11 @@ public class CompanyEntity
   public String getName()
   {
     return name;
+  }
+
+  public String getNormalizedName()
+  {
+    return normalizedName;
   }
 
   public String getWebsite()

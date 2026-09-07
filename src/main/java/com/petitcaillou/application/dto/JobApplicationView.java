@@ -4,27 +4,22 @@ import java.time.LocalDate;
 
 import com.petitcaillou.domain.company.Company;
 import com.petitcaillou.domain.jobapplication.JobApplication;
+import com.petitcaillou.domain.offer.Offer;
 
 public record JobApplicationView(
   String id,
-  CompanyView company,
-  String link,
-  String title,
-  String description,
-  String location,
+  OfferView offer,
   LocalDate applicationDate,
-  String responseStatus)
+  String responseStatus,
+  String notes)
 {
-  public static JobApplicationView from(JobApplication application, Company company)
+  public static JobApplicationView from(JobApplication application, Offer offer, Company company)
   {
     return new JobApplicationView(
       application.id().value().toString(),
-      CompanyView.from(company),
-      application.link(),
-      application.title(),
-      application.description(),
-      application.location(),
+      OfferView.from(offer, company),
       application.applicationDate(),
-      application.responseStatus().name());
+      application.responseStatus().name(),
+      application.notes());
   }
 }
