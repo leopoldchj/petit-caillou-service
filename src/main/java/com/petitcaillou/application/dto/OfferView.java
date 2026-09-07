@@ -16,6 +16,9 @@ public record OfferView(
   boolean verified,
   String visibility)
 {
+  public static final String PUBLIC = "PUBLIC";
+  public static final String PRIVATE = "PRIVATE";
+
   public static OfferView from(Offer offer, Company company)
   {
     return new OfferView(
@@ -27,6 +30,6 @@ public record OfferView(
       offer.link(),
       offer.description(),
       offer.verified(),
-      offer.isPublic() ? "PUBLIC" : "PRIVATE");
+      offer.isPublic() ? PUBLIC : PRIVATE);
   }
 }
