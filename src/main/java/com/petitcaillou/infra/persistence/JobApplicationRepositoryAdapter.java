@@ -40,9 +40,12 @@ public class JobApplicationRepositoryAdapter implements JobApplicationRepository
   @Override
   public Page<JobApplication> findByOwner(Username owner, PageRequest pageRequest)
   {
-    org.springframework.data.domain.Page<JobApplicationEntity> page =
-      jpa.findByOwnerUsername(owner.value(), PageMapper.toPageable(pageRequest, NEWEST_FIRST));
-    return PageMapper.toDomain(page, pageRequest, JobApplicationMapper::toDomain);
+    var page = jpa.findByOwnerUsername(owner.value(), PageMapper.toPageable(pageRequest.page(), pageRequest.size(), NEWEST_FIRST));
+    return PageMapper.toDomain(
+      page.getContent().stream().map(JobApplicationMapper::toDomain).toList(),
+      pageRequest.page(),
+      pageRequest.size(),
+      page.getTotalElements());
   }
 
   @Override

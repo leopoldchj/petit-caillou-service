@@ -56,9 +56,12 @@ public class OfferRepositoryAdapter implements OfferRepository
   public Page<Offer> findVisibleTo(Username user, PageRequest pageRequest)
   {
     List<String> scopes = List.of(SystemAccount.USERNAME.value(), user.value());
-    org.springframework.data.domain.Page<OfferEntity> page =
-      jpa.findByCreatedByIn(scopes, PageMapper.toPageable(pageRequest, NEWEST_FIRST));
-    return PageMapper.toDomain(page, pageRequest, OfferMapper::toDomain);
+    var page = jpa.findByCreatedByIn(scopes, PageMapper.toPageable(pageRequest.page(), pageRequest.size(), NEWEST_FIRST));
+    return PageMapper.toDomain(
+      page.getContent().stream().map(OfferMapper::toDomain).toList(),
+      pageRequest.page(),
+      pageRequest.size(),
+      page.getTotalElements());
   }
 
   @Override

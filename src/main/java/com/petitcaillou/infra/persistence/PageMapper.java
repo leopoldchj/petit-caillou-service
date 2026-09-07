@@ -1,12 +1,12 @@
 package com.petitcaillou.infra.persistence;
 
-import java.util.function.Function;
+import java.util.List;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import com.petitcaillou.domain.pagination.Page;
-import com.petitcaillou.domain.pagination.PageRequest;
 
 final class PageMapper
 {
@@ -14,18 +14,13 @@ final class PageMapper
   {
   }
 
-  static Pageable toPageable(PageRequest pageRequest, Sort sort)
+  static Pageable toPageable(int page, int size, Sort sort)
   {
-    return org.springframework.data.domain.PageRequest.of(pageRequest.page(), pageRequest.size(), sort);
+    return PageRequest.of(page, size, sort);
   }
 
-  static <E, D> Page<D> toDomain(org.springframework.data.domain.Page<E> page, PageRequest pageRequest,
-    Function<E, D> mapper)
+  static <D> Page<D> toDomain(List<D> content, int page, int size, long totalElements)
   {
-    return new Page<>(
-      page.getContent().stream().map(mapper).toList(),
-      pageRequest.page(),
-      pageRequest.size(),
-      page.getTotalElements());
+    return new Page<>(content, page, size, totalElements);
   }
 }
