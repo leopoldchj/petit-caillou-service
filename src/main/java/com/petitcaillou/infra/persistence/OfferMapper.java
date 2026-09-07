@@ -30,6 +30,11 @@ final class OfferMapper
       offer.dedupKey().value());
   }
 
+  static OfferEntity toNewEntity(Offer source)
+  {
+    return toEntity(source).asNew();
+  }
+
   static Offer toDomain(OfferEntity entity)
   {
     OfferDetails details = new OfferDetails(

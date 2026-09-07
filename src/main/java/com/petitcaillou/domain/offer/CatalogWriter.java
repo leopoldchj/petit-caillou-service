@@ -1,6 +1,8 @@
 package com.petitcaillou.domain.offer;
 
+import java.util.List;
+
 public interface CatalogWriter
 {
-  OfferWriteResult ingest(ScannedOffer scanned);
+  List<OfferWriteResult> ingestAll(List<ScannedOffer> scanned);
 }

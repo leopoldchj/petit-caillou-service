@@ -1,13 +1,18 @@
 package com.petitcaillou.infra.persistence;
 
+import org.springframework.data.domain.Persistable;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "companies")
-public class CompanyEntity
+public class CompanyEntity implements Persistable<String>
 {
   @Id
   @Column(name = "id", nullable = false, updatable = false, length = 36)
@@ -22,6 +27,9 @@ public class CompanyEntity
   @Column(name = "website", length = 2048)
   private String website;
 
+  @Transient
+  private boolean isNew;
+
   protected CompanyEntity()
   {
   }
@@ -34,9 +42,29 @@ public class CompanyEntity
     this.website = website;
   }
 
+  CompanyEntity asNew()
+  {
+    this.isNew = true;
+    return this;
+  }
+
+  @Override
   public String getId()
   {
     return id;
+  }
+
+  @Override
+  public boolean isNew()
+  {
+    return isNew;
+  }
+
+  @PostLoad
+  @PostPersist
+  void markPersisted()
+  {
+    this.isNew = false;
   }
 
   public String getName()

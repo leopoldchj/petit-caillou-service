@@ -15,6 +15,11 @@ public class FakeOfferSource implements OfferSource
   @Override
   public SourcePage fetch(LocalDate since, LocalDate until, String cursor)
   {
+    if (cursor != null)
+    {
+      return new SourcePage(List.of(), null);
+    }
+
     LocalDate publicationDate = since != null ? since : LocalDate.now();
     ScannedOffer offer = new ScannedOffer(
       "Acme",

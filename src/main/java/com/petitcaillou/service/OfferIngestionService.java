@@ -7,7 +7,7 @@ import java.util.List;
 import com.petitcaillou.domain.offer.CatalogWriter;
 import com.petitcaillou.domain.offer.IngestionReport;
 import com.petitcaillou.domain.offer.OfferSource;
-import com.petitcaillou.domain.offer.ScannedOffer;
+import com.petitcaillou.domain.offer.OfferWriteResult;
 import com.petitcaillou.domain.offer.SourcePage;
 
 public class OfferIngestionService
@@ -44,21 +44,14 @@ public class OfferIngestionService
     int unchanged = 0;
     List<IngestionReport.Failure> failures = new ArrayList<>();
 
-    for (ScannedOffer scanned : page.items())
+    for (OfferWriteResult result : catalog.ingestAll(page.items()))
     {
-      try
+      switch (result.outcome())
       {
-        switch (catalog.ingest(scanned).outcome())
-        {
-          case CREATED -> created++;
-          case UPDATED -> updated++;
-          case UNCHANGED -> unchanged++;
-        }
-      }
-      catch (RuntimeException exception)
-      {
-        String reason = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
-        failures.add(new IngestionReport.Failure(scanned, reason));
+        case CREATED -> created++;
+        case UPDATED -> updated++;
+        case UNCHANGED -> unchanged++;
+        case FAILED -> failures.add(new IngestionReport.Failure(result.source(), result.reason()));
       }
     }
 

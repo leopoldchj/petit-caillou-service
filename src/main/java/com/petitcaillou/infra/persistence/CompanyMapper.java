@@ -20,6 +20,11 @@ final class CompanyMapper
       company.website() == null ? null : company.website().value());
   }
 
+  static CompanyEntity toNewEntity(Company source)
+  {
+    return toEntity(source).asNew();
+  }
+
   static Company toDomain(CompanyEntity entity)
   {
     return Company.reconstitute(CompanyId.of(UUID.fromString(entity.getId())), entity.getName(), entity.getWebsite());

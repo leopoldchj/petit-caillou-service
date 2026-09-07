@@ -1,115 +1,157 @@
 package com.petitcaillou.infra.persistence;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import com.petitcaillou.domain.company.Company;
-import com.petitcaillou.domain.company.CompanyId;
-import com.petitcaillou.domain.company.CompanyRepository;
-import com.petitcaillou.domain.company.NormalizedName;
-import com.petitcaillou.domain.offer.Offer;
-import com.petitcaillou.domain.offer.OfferDetails;
-import com.petitcaillou.domain.offer.OfferRepository;
+import com.petitcaillou.domain.offer.ContentHash;
 import com.petitcaillou.domain.offer.OfferWriteResult;
 import com.petitcaillou.domain.offer.ScannedOffer;
 import com.petitcaillou.domain.offer.SystemAccount;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class CatalogWriterAdapterTest
 {
-  private static final CompanyId COMPANY = CompanyId.of(UUID.randomUUID());
+  @Captor
+  private ArgumentCaptor<List<OfferEntity>> written;
+
+  private static final LocalDate PUBLISHED = LocalDate.of(2026, 8, 30);
+  private static final String COMPANY_ID = UUID.randomUUID().toString();
+  private static final String DEDUP_KEY = ContentHash.ofSource("board", "42").value();
   private static final ScannedOffer SCANNED = new ScannedOffer(
-    "Acme", "https://acme.example", "Backend Engineer", "Paris", LocalDate.of(2026, 8, 30),
+    "Acme", "https://acme.example", "Backend Engineer", "Paris", PUBLISHED,
     "https://x/1", "role", "board", "42");
 
-  private final CompanyRepository companies = mock(CompanyRepository.class);
-  private final OfferRepository offers = mock(OfferRepository.class);
-  private final CatalogWriterAdapter adapter = new CatalogWriterAdapter(companies, offers);
+  private final SpringDataCompanyRepository companies = mock(SpringDataCompanyRepository.class);
+  private final SpringDataOfferRepository offers = mock(SpringDataOfferRepository.class);
+  private final CatalogWriterAdapter adapter = new CatalogWriterAdapter(companies, offers,
+    new TransactionTemplate(mock(PlatformTransactionManager.class)));
 
-  private Company company()
+  private CompanyEntity knownCompany()
   {
-    return Company.reconstitute(COMPANY, "Acme", "https://acme.example");
+    return new CompanyEntity(COMPANY_ID, "Acme", "acme", "https://acme.example");
   }
 
-  private Offer existing()
+  private OfferEntity storedOffer(String title)
   {
-    OfferDetails details = new OfferDetails(COMPANY, "Backend Engineer", "Paris", LocalDate.of(2026, 8, 30),
-      "https://x/1", "role");
-    return Offer.ingested(details, false, "board", "42");
+    return new OfferEntity(UUID.randomUUID().toString(), COMPANY_ID, title, "Paris", PUBLISHED,
+      "https://x/1", "role", SystemAccount.USERNAME.value(), false, DEDUP_KEY);
+  }
+
+  private void companyIsKnown()
+  {
+    when(companies.findByNormalizedNameIn(anyCollection())).thenReturn(List.of(knownCompany()));
+  }
+
+  private void offerIsKnown(String title)
+  {
+    when(offers.findByCreatedByAndContentHashIn(eq(SystemAccount.USERNAME.value()), anyCollection()))
+      .thenReturn(List.of(storedOffer(title)));
   }
 
   @Test
   void given_unknownCompany_when_ingesting_then_createsIt()
   {
-    when(companies.findByNormalizedName(any(NormalizedName.class))).thenReturn(Optional.empty());
-    when(companies.save(any())).thenReturn(company());
-    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.empty());
-    when(offers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    adapter.ingestAll(List.of(SCANNED));
 
-    adapter.ingest(SCANNED);
-
-    verify(companies).save(any(Company.class));
+    verify(companies).saveAll(anyCollection());
   }
 
   @Test
-  void given_newOffer_when_ingesting_then_createsIt()
+  void given_newOffer_when_ingesting_then_reportsCreated()
   {
-    when(companies.findByNormalizedName(any(NormalizedName.class))).thenReturn(Optional.of(company()));
-    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.empty());
-    when(offers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    companyIsKnown();
 
-    assertThat(adapter.ingest(SCANNED).outcome()).isEqualTo(OfferWriteResult.Outcome.CREATED);
+    assertThat(adapter.ingestAll(List.of(SCANNED)).getFirst().outcome())
+      .isEqualTo(OfferWriteResult.Outcome.CREATED);
   }
 
   @Test
-  void given_sameOfferAgain_when_ingesting_then_isUnchanged()
+  void given_knownOfferWithSameContent_when_ingesting_then_reportsUnchanged()
   {
-    when(companies.findByNormalizedName(any(NormalizedName.class))).thenReturn(Optional.of(company()));
-    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.of(existing()));
+    companyIsKnown();
+    offerIsKnown("Backend Engineer");
 
-    assertThat(adapter.ingest(SCANNED).outcome()).isEqualTo(OfferWriteResult.Outcome.UNCHANGED);
+    assertThat(adapter.ingestAll(List.of(SCANNED)).getFirst().outcome())
+      .isEqualTo(OfferWriteResult.Outcome.UNCHANGED);
   }
 
   @Test
-  void given_sameOfferAgain_when_ingesting_then_neverSaves()
+  void given_knownOfferWithSameContent_when_ingesting_then_writesNothing()
   {
-    when(companies.findByNormalizedName(any(NormalizedName.class))).thenReturn(Optional.of(company()));
-    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.of(existing()));
+    companyIsKnown();
+    offerIsKnown("Backend Engineer");
 
-    adapter.ingest(SCANNED);
+    adapter.ingestAll(List.of(SCANNED));
 
-    verify(offers, never()).save(any());
+    verify(offers, times(2)).saveAll(List.of());
   }
 
   @Test
-  void given_changedOffer_when_ingesting_then_isUpdated()
+  void given_knownOfferWithChangedContent_when_ingesting_then_reportsUpdated()
   {
-    when(companies.findByNormalizedName(any(NormalizedName.class))).thenReturn(Optional.of(company()));
-    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.of(existing()));
-    when(offers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    companyIsKnown();
+    offerIsKnown("Junior Engineer");
 
-    ScannedOffer changed = new ScannedOffer("Acme", "https://acme.example", "Senior Backend Engineer", "Paris",
-      LocalDate.of(2026, 8, 30), "https://x/1", "role", "board", "42");
-
-    assertThat(adapter.ingest(changed).outcome()).isEqualTo(OfferWriteResult.Outcome.UPDATED);
+    assertThat(adapter.ingestAll(List.of(SCANNED)).getFirst().outcome())
+      .isEqualTo(OfferWriteResult.Outcome.UPDATED);
   }
 
   @Test
-  void given_ingestedOffer_when_ingesting_then_offerIsOwnedBySystem()
+  void given_duplicateWithinTheSameBatch_when_ingesting_then_writesItOnce()
   {
-    when(companies.findByNormalizedName(any(NormalizedName.class))).thenReturn(Optional.of(company()));
-    when(offers.findByDedupKeyAndCreatedBy(any(), any())).thenReturn(Optional.empty());
-    when(offers.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    companyIsKnown();
 
-    assertThat(adapter.ingest(SCANNED).offer().createdBy()).isEqualTo(SystemAccount.USERNAME);
+    adapter.ingestAll(List.of(SCANNED, SCANNED));
+
+    verify(offers, times(2)).saveAll(written.capture());
+    assertThat(written.getAllValues().getFirst()).hasSize(1);
+  }
+
+  @Test
+  void given_invalidCompanyName_when_ingesting_then_reportsFailure()
+  {
+    ScannedOffer invalid = new ScannedOffer("!!!", null, "Backend Engineer", "Paris", PUBLISHED,
+      null, null, "board", "43");
+
+    assertThat(adapter.ingestAll(List.of(invalid)).getFirst().outcome())
+      .isEqualTo(OfferWriteResult.Outcome.FAILED);
+  }
+
+  @Test
+  void given_aBatch_when_ingesting_then_looksUpCompaniesOnce()
+  {
+    companyIsKnown();
+
+    adapter.ingestAll(List.of(SCANNED, SCANNED, SCANNED));
+
+    verify(companies, times(1)).findByNormalizedNameIn(anyCollection());
+  }
+
+  @Test
+  void given_aBatch_when_ingesting_then_looksUpExistingOffersOnce()
+  {
+    companyIsKnown();
+
+    adapter.ingestAll(List.of(SCANNED, SCANNED, SCANNED));
+
+    verify(offers, times(1)).findByCreatedByAndContentHashIn(any(), anyCollection());
   }
 }

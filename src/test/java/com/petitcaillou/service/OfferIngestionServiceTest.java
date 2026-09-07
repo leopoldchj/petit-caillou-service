@@ -5,17 +5,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.offer.CatalogWriter;
-import com.petitcaillou.domain.offer.Offer;
-import com.petitcaillou.domain.offer.OfferDetails;
 import com.petitcaillou.domain.offer.OfferSource;
 import com.petitcaillou.domain.offer.OfferWriteResult;
 import com.petitcaillou.domain.offer.ScannedOffer;
 import com.petitcaillou.domain.offer.SourcePage;
-import com.petitcaillou.domain.offer.SystemAccount;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,22 +29,21 @@ class OfferIngestionServiceTest
   private final CatalogWriter catalog = mock(CatalogWriter.class);
   private final OfferIngestionService service = new OfferIngestionService(source, catalog);
 
-  private Offer sampleOffer()
+  private void sourceReturnsOneOffer()
   {
-    OfferDetails details = new OfferDetails(CompanyId.of(UUID.randomUUID()), "Backend Engineer", "Paris", SINCE, null, null);
-    return Offer.ingested(details, false, "board", "1");
+    when(source.fetch(SINCE, UNTIL, null)).thenReturn(new SourcePage(List.of(SCANNED), null));
   }
 
-  private void outcome(OfferWriteResult.Outcome outcome)
+  private void catalogReports(OfferWriteResult.Outcome outcome)
   {
-    when(catalog.ingest(any())).thenReturn(new OfferWriteResult(sampleOffer(), outcome));
+    when(catalog.ingestAll(any())).thenReturn(List.of(OfferWriteResult.of(SCANNED, outcome)));
   }
 
   @Test
   void given_newOffer_when_ingesting_then_countsCreated()
   {
-    when(source.fetch(SINCE, UNTIL, null)).thenReturn(new SourcePage(List.of(SCANNED), null));
-    outcome(OfferWriteResult.Outcome.CREATED);
+    sourceReturnsOneOffer();
+    catalogReports(OfferWriteResult.Outcome.CREATED);
 
     assertThat(service.ingestWindow(SINCE, UNTIL).created()).isEqualTo(1);
   }
@@ -58,8 +51,8 @@ class OfferIngestionServiceTest
   @Test
   void given_enrichedOffer_when_ingesting_then_countsUpdated()
   {
-    when(source.fetch(SINCE, UNTIL, null)).thenReturn(new SourcePage(List.of(SCANNED), null));
-    outcome(OfferWriteResult.Outcome.UPDATED);
+    sourceReturnsOneOffer();
+    catalogReports(OfferWriteResult.Outcome.UPDATED);
 
     assertThat(service.ingestWindow(SINCE, UNTIL).updated()).isEqualTo(1);
   }
@@ -67,17 +60,17 @@ class OfferIngestionServiceTest
   @Test
   void given_alreadyKnownOffer_when_ingesting_then_countsUnchanged()
   {
-    when(source.fetch(SINCE, UNTIL, null)).thenReturn(new SourcePage(List.of(SCANNED), null));
-    outcome(OfferWriteResult.Outcome.UNCHANGED);
+    sourceReturnsOneOffer();
+    catalogReports(OfferWriteResult.Outcome.UNCHANGED);
 
     assertThat(service.ingestWindow(SINCE, UNTIL).unchanged()).isEqualTo(1);
   }
 
   @Test
-  void given_failingEntry_when_ingesting_then_retainsItForReplay()
+  void given_rejectedEntry_when_ingesting_then_retainsItForReplay()
   {
-    when(source.fetch(SINCE, UNTIL, null)).thenReturn(new SourcePage(List.of(SCANNED), null));
-    when(catalog.ingest(any())).thenThrow(new IllegalStateException("Unavailable"));
+    sourceReturnsOneOffer();
+    when(catalog.ingestAll(any())).thenReturn(List.of(OfferWriteResult.failed(SCANNED, "Unavailable")));
 
     assertThat(service.ingestWindow(SINCE, UNTIL).failures().getFirst().offer()).isEqualTo(SCANNED);
   }
@@ -105,8 +98,8 @@ class OfferIngestionServiceTest
   }
 
   @Test
-  void given_systemAccount_when_ingesting_then_offersAreOwnedByIt()
+  void given_missingWindow_when_ingesting_then_rejectsIt()
   {
-    assertThat(sampleOffer().createdBy()).isEqualTo(SystemAccount.USERNAME);
+    assertThatThrownBy(() -> service.ingestWindow(null, UNTIL)).isInstanceOf(IllegalArgumentException.class);
   }
 }

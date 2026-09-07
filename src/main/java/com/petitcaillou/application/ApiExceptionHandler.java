@@ -109,7 +109,7 @@ public class ApiExceptionHandler
   }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ProblemDetail onUnreadableBody(HttpMessageNotReadableException exception)
+  public ProblemDetail onUnreadableBody()
   {
     return problem(HttpStatus.BAD_REQUEST, "Malformed request body");
   }

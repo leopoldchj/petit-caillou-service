@@ -2,14 +2,19 @@ package com.petitcaillou.infra.persistence;
 
 import java.time.LocalDate;
 
+import org.springframework.data.domain.Persistable;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "offers")
-public class OfferEntity
+public class OfferEntity implements Persistable<String>
 {
   @Id
   @Column(name = "id", nullable = false, updatable = false, length = 36)
@@ -42,6 +47,9 @@ public class OfferEntity
   @Column(name = "content_hash", nullable = false, length = 64)
   private String contentHash;
 
+  @Transient
+  private boolean isNew;
+
   protected OfferEntity()
   {
   }
@@ -61,9 +69,29 @@ public class OfferEntity
     this.contentHash = contentHash;
   }
 
+  OfferEntity asNew()
+  {
+    this.isNew = true;
+    return this;
+  }
+
+  @Override
   public String getId()
   {
     return id;
+  }
+
+  @Override
+  public boolean isNew()
+  {
+    return isNew;
+  }
+
+  @PostLoad
+  @PostPersist
+  void markPersisted()
+  {
+    this.isNew = false;
   }
 
   public String getCompanyId()

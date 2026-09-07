@@ -10,7 +10,7 @@ spring:
   datasource:
     # DB_SSL_MODE: disable, trust, verify-ca or verify-full. Raise it to
     # verify-full as soon as the server accepts TLS.
-    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:petit_caillou}?sslMode=${DB_SSL_MODE:disable}
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:petit_caillou}?sslMode=${DB_SSL_MODE:disable}&rewriteBatchedStatements=true
     username: ${DB_USERNAME:petit_caillou}
     password: ${DB_PASSWORD:}
     driver-class-name: org.mariadb.jdbc.Driver
@@ -27,6 +27,11 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+          # Batched writes for bulk ingestion; rewriteBatchedStatements on the
+          # JDBC URL is what turns them into single multi-row statements.
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
 
   flyway:
     enabled: true
