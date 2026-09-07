@@ -41,7 +41,8 @@ class CatalogWriterAdapterTest
 
   private final SpringDataCompanyRepository companies = mock(SpringDataCompanyRepository.class);
   private final SpringDataOfferRepository offers = mock(SpringDataOfferRepository.class);
-  private final CatalogWriterAdapter adapter = new CatalogWriterAdapter(companies, offers,
+  private final CatalogWriterAdapter adapter = new CatalogWriterAdapter(
+    new OfferBatchWriter(new CompanyResolver(companies), offers),
     new TransactionTemplate(mock(PlatformTransactionManager.class)));
 
   private CompanyEntity knownCompany()

@@ -2,6 +2,7 @@ package com.petitcaillou.domain.offer;
 
 import java.time.LocalDate;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.petitcaillou.domain.company.CompanyId;
 import com.petitcaillou.domain.user.Username;
@@ -80,7 +81,13 @@ public final class Offer
     return ContentHash.of(details.companyId(), details.title(), details.location(), details.publicationDate());
   }
 
-  public Offer enrichedWith(OfferDetails incoming)
+  public Optional<Offer> updatedWith(OfferDetails incoming)
+  {
+    Offer merged = enrichedWith(incoming);
+    return hasSameContent(merged) ? Optional.empty() : Optional.of(merged);
+  }
+
+  private Offer enrichedWith(OfferDetails incoming)
   {
     OfferDetails merged = new OfferDetails(
       companyId,
@@ -92,7 +99,7 @@ public final class Offer
     return new Offer(id, createdBy, merged, verified, dedupKey);
   }
 
-  public boolean hasSameContent(Offer other)
+  private boolean hasSameContent(Offer other)
   {
     return companyId.equals(other.companyId)
       && Objects.equals(title, other.title)

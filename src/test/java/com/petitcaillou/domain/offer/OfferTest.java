@@ -78,31 +78,40 @@ class OfferTest
   }
 
   @Test
-  void given_ingestedOffer_when_enriched_then_dedupKeyIsUnchanged()
+  void given_sameDetails_when_updating_then_reportsNothingToChange()
   {
     Offer offer = Offer.ingested(DETAILS, false, "board", "42");
 
-    OfferDetails changed = new OfferDetails(COMPANY, "Senior Backend Engineer", "Lyon",
-      LocalDate.of(2026, 8, 30), "https://x/2", "Updated");
-
-    assertThat(offer.enrichedWith(changed).dedupKey()).isEqualTo(offer.dedupKey());
+    assertThat(offer.updatedWith(DETAILS)).isEmpty();
   }
 
   @Test
-  void given_sameContent_when_comparing_then_reportsEqual()
-  {
-    Offer offer = Offer.ingested(DETAILS, false, "board", "42");
-
-    assertThat(offer.hasSameContent(offer.enrichedWith(DETAILS))).isTrue();
-  }
-
-  @Test
-  void given_changedContent_when_comparing_then_reportsDifferent()
+  void given_changedDetails_when_updating_then_returnsTheMergedOffer()
   {
     Offer offer = Offer.ingested(DETAILS, false, "board", "42");
     OfferDetails changed = new OfferDetails(COMPANY, "Senior Backend Engineer", "Paris",
       LocalDate.of(2026, 8, 30), "https://x/1", "A role");
 
-    assertThat(offer.hasSameContent(offer.enrichedWith(changed))).isFalse();
+    assertThat(offer.updatedWith(changed).orElseThrow().title()).isEqualTo("Senior Backend Engineer");
+  }
+
+  @Test
+  void given_changedDetails_when_updating_then_keepsTheDedupKey()
+  {
+    Offer offer = Offer.ingested(DETAILS, false, "board", "42");
+    OfferDetails changed = new OfferDetails(COMPANY, "Senior Backend Engineer", "Lyon",
+      LocalDate.of(2026, 8, 30), "https://x/2", "Updated");
+
+    assertThat(offer.updatedWith(changed).orElseThrow().dedupKey()).isEqualTo(offer.dedupKey());
+  }
+
+  @Test
+  void given_blankIncomingField_when_updating_then_keepsTheExistingValue()
+  {
+    Offer offer = Offer.ingested(DETAILS, false, "board", "42");
+    OfferDetails partial = new OfferDetails(COMPANY, "Senior Backend Engineer", null,
+      LocalDate.of(2026, 8, 30), null, null);
+
+    assertThat(offer.updatedWith(partial).orElseThrow().location()).isEqualTo("Paris");
   }
 }
